@@ -26,9 +26,17 @@ df <- read.csv(paste(d.dir,
   dplyr::select(site_name, year, transect, zone, latitude, longitude, den_NERLUE) %>%
   mutate_at(vars(year, transect, zone, site_name), list(as.factor)) %>%
   mutate(log_den_NERLUE = log(den_NERLUE)) 
+
+filter(df1, den_NERLUE == 0) %>% count() # 719 0's
+
 # log(0), -inf, 0, NA
 df$log_den_NERLUE <- replace(df$log_den_NERLUE, df$log_den_NERLUE == -Inf, 0)
-df %>% head()
+head(df)
+
+df2 <- df %>% 
+  group_by(site_name, year, zone) %>%
+  summarise_at(vars(log_den_NERLUE), list(log_den_NERLUE = mean), na.rm = TRUE)
+head(df2)
 
 # read the .csv file
 site <- read.csv(paste(d.dir, 
@@ -45,4 +53,5 @@ st_write(site_shp, paste0(d.dir, '/RCCA_North_Coast_sites.shp'), append = FALSE)
 
 # 2006
 rast_2006 <- rast(paste0(r.dir, '/2006_Nereo_preds_NC_V4_5.1.1_V2.tif'))
-terra::extract(rast_2006, vect(site_shp$geometry))
+terra::extract(rast_2006, vect(site_shp$geometry)) %>% 
+  mutate(site_name = site$site_name, .before = fit)

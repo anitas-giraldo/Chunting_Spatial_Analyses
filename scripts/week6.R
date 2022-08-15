@@ -8,8 +8,10 @@ library(pander)
 library(magrittr)
 library(ggplot2)
 library(dplyr)
+library(tidyr)
 library(RColorBrewer)
 library(here)
+library(plotrix)
 
 # compare spatial predictions of kelp to 'in situ' survey data
 # compare each year and location
@@ -36,8 +38,10 @@ head(df)
 
 obs <- df %>% 
   group_by(site_name, year, zone) %>%
-  summarise_at(vars(log_den_NERLUE), list(log_den_NERLUE = mean), na.rm = TRUE)
-head(obs)
+  summarise_at(vars(log_den_NERLUE), list(den_NERLUE = mean, se = std.error), na.rm = TRUE) %>%
+  pivot_wider(names_from = zone, values_from = c(den_NERLUE, se))
+
+View(obs)
 
 # read the .csv file
 site <- read.csv(paste(d.dir, 
@@ -72,16 +76,40 @@ pred_2008 <- terra::extract(rast_2008, vect(site_shp$geometry)) %>%
   mutate(site_name = site$site_name, year = 2008, .before = fit)
 
 # use for-loop
-pred <- data.frame(ID = numeric(),
-                   site_name = character(),
+pred <- data.frame(site_name = character(),
                    year = numeric(),
                    fit = numeric())
 
 for (i in c(2006:2021)) {
   rast <- rast(paste0(r.dir, paste0('/', i, '_Nereo_preds_NC_V4_5.1.1_V2.tif')))
   ext <- terra::extract(rast, vect(site_shp$geometry)) %>%
-    mutate(site_name = site$site_name, year = i, .before = fit)
+    mutate(site_name = site$site_name, year = as.factor(i), .before = fit) %>%
+    dplyr::select(-ID) 
   pred <- rbind(pred, ext)
 }
 
 View(pred)
+
+# combine obs and pred
+dim(obs)
+dim(pred)
+
+kelp_data <- left_join(pred, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+
+View(kelp_data)
+
+# plotting
+kelp_data %>% 
+  filter(site_name == 'Caspar') %>%
+  ggplot(aes())
+
+kelp_data %>% filter(site_name == 'Caspar') %>%
+  ggplot() + 
+  geom_bar(aes(x = year, y = fit), stat = 'identity', fill = 'skyblue', alpha = 0.5) + 
+  geom_pointrange(aes(x = year, y = den_NERLUE_INNER, 
+                      ymin = den_NERLUE_INNER - se_INNER,
+                      ymax = den_NERLUE_INNER + se_INNER),
+                  colour = "orange", alpha = 0.9, size = 0.4) 

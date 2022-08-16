@@ -112,25 +112,30 @@ View(kelp_data)
 #   ggplot(aes(x = year, y = mean, fill = zone)) + 
 #   geom_bar(position = 'dodge', stat = 'identity')
 
-
-kelp_data %>% 
+sites <- unique(kelp_data$site_name) 
+kelp_longer <- kelp_data %>% 
     pivot_longer(
       -c('site_name', 'year', 'fit'),
       names_to = c('.value', 'zone'),
       names_sep = '_'
-      ) %>%
-  filter(site_name == 'Caspar') %>%
-  ggplot() + 
-  geom_pointrange(aes(x = year, y = mean, group = zone, color = zone,
-                      ymin = mean - se, ymax = mean + se),
-                  alpha = 0.5, size = 0.3) + 
-  geom_bar(aes(x = year, y = fit), 
-           stat = 'identity', position = 'dodge', 
-           fill = 'blue', alpha = 0.3) + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, size = 8), 
-        panel.grid.major = element_blank()) + 
-  labs(y = 'log of kelp density')
-
-
+      ) 
+  
+for (i in sites) {
+  plot <- kelp_longer %>% 
+    filter(site_name == i) %>%
+    ggplot() + 
+    geom_pointrange(aes(
+      x = year, y = mean, group = zone, color = zone, 
+      ymin = mean - se, ymax = mean + se
+      ), alpha = 0.5, size = 0.3) + 
+    geom_bar(aes(x = year, y = fit), 
+             stat = 'identity', position = 'dodge', 
+             fill = 'blue', alpha = 0.3) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, size = 8), 
+          plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank()) + 
+    labs(y = 'log of kelp density', title = i)
+  print(plot)
+}
 

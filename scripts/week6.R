@@ -38,8 +38,8 @@ head(df)
 
 obs <- df %>% 
   group_by(site_name, year, zone) %>%
-  summarise_at(vars(log_den_NERLUE), list(den_NERLUE = mean, se = std.error), na.rm = TRUE) %>%
-  pivot_wider(names_from = zone, values_from = c(den_NERLUE, se))
+  summarise_at(vars(log_den_NERLUE), list(mean = mean, se = std.error), na.rm = TRUE) %>%
+  pivot_wider(names_from = zone, values_from = c(mean, se))
 
 View(obs)
 
@@ -48,7 +48,7 @@ site <- read.csv(paste(d.dir,
                        'RCCA_North_Coast_sites.csv', 
                        sep = '/')) 
 # convert from .csv to .shp
-site_shp <- st_as_sf(csv, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
 class(site_shp)
 # write the file
 st_write(site_shp, paste0(d.dir, '/RCCA_North_Coast_sites.shp'), append = FALSE)
@@ -102,14 +102,35 @@ kelp_data <- left_join(pred, obs, by = c('site_name', 'year')) %>%
 View(kelp_data)
 
 # plotting
-kelp_data %>% 
-  filter(site_name == 'Caspar') %>%
-  ggplot(aes())
+# kelp_data %>% 
+#   pivot_longer(
+#     -c('site_name', 'year', 'fit'), 
+#     names_to = c('.value', 'zone'),
+#     names_sep = '_'
+#     ) %>%
+#   filter(site_name == 'Caspar') %>%
+#   ggplot(aes(x = year, y = mean, fill = zone)) + 
+#   geom_bar(position = 'dodge', stat = 'identity')
 
-kelp_data %>% filter(site_name == 'Caspar') %>%
+
+kelp_data %>% 
+    pivot_longer(
+      -c('site_name', 'year', 'fit'),
+      names_to = c('.value', 'zone'),
+      names_sep = '_'
+      ) %>%
+  filter(site_name == 'Caspar') %>%
   ggplot() + 
-  geom_bar(aes(x = year, y = fit), stat = 'identity', fill = 'skyblue', alpha = 0.5) + 
-  geom_pointrange(aes(x = year, y = den_NERLUE_INNER, 
-                      ymin = den_NERLUE_INNER - se_INNER,
-                      ymax = den_NERLUE_INNER + se_INNER),
-                  colour = "orange", alpha = 0.9, size = 0.4) 
+  geom_pointrange(aes(x = year, y = mean, group = zone, color = zone,
+                      ymin = mean - se, ymax = mean + se),
+                  alpha = 0.5, size = 0.3) + 
+  geom_bar(aes(x = year, y = fit), 
+           stat = 'identity', position = 'dodge', 
+           fill = 'blue', alpha = 0.3) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, size = 8), 
+        panel.grid.major = element_blank()) + 
+  labs(y = 'log of kelp density')
+
+
+

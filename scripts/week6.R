@@ -101,7 +101,7 @@ kelp_data <- left_join(pred, obs, by = c('site_name', 'year')) %>%
 
 View(kelp_data)
 
-# plotting
+# plotting - log of kelp vs. year
 # kelp_data %>% 
 #   pivot_longer(
 #     -c('site_name', 'year', 'fit'), 
@@ -139,3 +139,21 @@ for (i in sites) {
   print(plot)
 }
 
+# plotting - pred vs. obs
+
+kelp_longer %>%
+  ggplot(aes(x = fit, y = mean)) +
+  geom_point(aes(color = zone), alpha = 0.6) + 
+  geom_smooth(method = 'lm', se = FALSE) + 
+  xlim(NA, 110) + 
+  labs(x = 'pred', y = 'obs') + 
+  theme_bw()
+
+kelp_longer %>%
+  ggplot(aes(x = fit, y = mean, color = zone)) +
+  geom_point(alpha = 0.6) + 
+  geom_smooth(method = 'lm', alpha = 0.15, aes(fill = zone)) + 
+  xlim(NA, 110) + 
+  labs(x = 'pred', y = 'obs') + 
+  facet_wrap(~zone, ncol = 2) + 
+  theme_bw()

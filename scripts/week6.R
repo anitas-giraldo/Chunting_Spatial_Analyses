@@ -141,13 +141,13 @@ for (i in sites) {
 
 # plotting - pred vs. obs
 
-kelp_longer %>%
-  ggplot(aes(x = fit, y = mean)) +
-  geom_point(aes(color = zone), alpha = 0.6) + 
-  geom_smooth(method = 'lm', se = FALSE) + 
-  xlim(NA, 110) + 
-  labs(x = 'pred', y = 'obs') + 
-  theme_bw()
+# kelp_longer %>%
+#   ggplot(aes(x = fit, y = mean)) +
+#   geom_point(aes(color = zone), alpha = 0.6) + 
+#   geom_smooth(method = 'lm', se = FALSE) + 
+#   xlim(NA, 110) + 
+#   labs(x = 'pred', y = 'obs') + 
+#   theme_bw()
 
 kelp_longer %>%
   ggplot(aes(x = fit, y = mean, color = zone)) +

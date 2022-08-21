@@ -171,13 +171,16 @@ for (i in sites) {
       x = year, y = mean, group = zone, color = zone, 
       ymin = mean - se, ymax = mean + se
       ), alpha = 0.5, size = 0.3) + 
-    geom_bar(aes(x = year, y = fit, fill = ifelse(fit >= 6.6, 'YES', 'NO')), 
+    geom_bar(aes(x = year, y = fit, 
+                 fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')), 
              stat = 'identity', position = 'dodge', alpha = 0.2) + 
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 90, size = 8), 
           plot.title = element_text(hjust = 0.5),
-          panel.grid.major = element_blank()) + 
-    labs(y = 'log of kelp density', title = i)
+          panel.grid.major = element_blank(),
+          legend.title = element_text(size = 9),
+          legend.text = element_text(size = 7)) + 
+    labs(y = 'log of kelp density', title = i, fill = 'fit >= 6.6')
   print(plot)
 }
 ```

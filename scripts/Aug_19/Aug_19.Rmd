@@ -149,20 +149,19 @@ kelp_longer <- kelp_data %>%
       ) 
 
 kelp_longer %>% 
-    filter(site_name == 'Dark Gulch') %>%
+    filter(site_name == 'Caspar') %>%
     ggplot() + 
     geom_pointrange(aes(
       x = year, y = mean, group = zone, color = zone, 
       ymin = mean - se, ymax = mean + se
       ), alpha = 0.5, size = 0.3) + 
-    geom_bar(aes(x = year, y = fit, fill = ifelse(fit >= 6.6)), 
-             stat = 'identity', position = 'dodge', 
-             alpha = 0.3) + 
+    geom_bar(aes(x = year, y = fit, fill = ifelse(fit >= 6.6, 'YES', 'NO')), 
+             stat = 'identity', position = 'dodge', alpha = 0.2) + 
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 90, size = 8), 
           plot.title = element_text(hjust = 0.5),
           panel.grid.major = element_blank()) + 
-    labs(y = 'log of kelp density', title = 'Dark Gulch')
+    labs(y = 'log of kelp density', title = 'Glass Beach')
   
 for (i in sites) {
   plot <- kelp_longer %>% 
@@ -172,9 +171,8 @@ for (i in sites) {
       x = year, y = mean, group = zone, color = zone, 
       ymin = mean - se, ymax = mean + se
       ), alpha = 0.5, size = 0.3) + 
-    geom_bar(aes(x = year, y = fit, colour = (fit >= 6.6)), 
-             stat = 'identity', position = 'dodge', 
-             fill = 'blue', alpha = 0.3) + 
+    geom_bar(aes(x = year, y = fit, fill = ifelse(fit >= 6.6, 'YES', 'NO')), 
+             stat = 'identity', position = 'dodge', alpha = 0.2) + 
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 90, size = 8), 
           plot.title = element_text(hjust = 0.5),

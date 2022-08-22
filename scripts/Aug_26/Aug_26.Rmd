@@ -39,6 +39,5 @@ Validate predictions using LANDSAT data for kelp area.
 # set a directory
 w.dir <- here()
 d.dir <- here('data')
-r.dir <- here('spatial_data/sp_predictions_5.1.1_V2')
 ```
 

@@ -40,13 +40,15 @@ Validate predictions using LANDSAT data for kelp area.
 w.dir <- here()
 d.dir <- here('data')
 
-# load kelp area cvs
-kelp_area <- read.csv(paste(d.dir, "NC_Landsat_kelp_area_1984_2021.csv", sep ='/')) %>%
+# load kelp area csv
+kelp_area <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep ='/')) %>%
   glimpse()
 
 # Landsat Kelp quarters: Q1 = Winter, Q2 = Spring, Q3 = Summer, Q4 = Fall
 kelp_area <- filter(kelp_area, quarter == 3)
 
-
+# load kelp density predictions csv
+kelp_density <- read.csv(paste(d.dir, 'NC_kelp_density_predictions.csv', sep ='/')) %>%
+  glimpse()
 ```
 

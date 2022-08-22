@@ -108,6 +108,12 @@ head(pred)
 
 # sites and years have predicted values higher than 6.6 (log of density)
 filter(pred, fit >= 6.6)
+
+# write to cvs
+merge_df <- left_join(pred,
+                      site %>% select(c(site_name, longitude, latitude)),
+                      by = 'site_name')
+write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions.csv'))
 ```
 
 ## Comparison

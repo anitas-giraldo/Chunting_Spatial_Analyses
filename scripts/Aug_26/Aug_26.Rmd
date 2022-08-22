@@ -44,9 +44,15 @@ d.dir <- here('data')
 area_df <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep ='/')) %>%
   glimpse()
 
-# Landsat Kelp quarters: Q1 = Winter, Q2 = Spring, Q3 = Summer, Q4 = Fall
+# vector of year
+area_df$year %>% unique() # 1984 - 2021
+area_df$year %>% unique() %>% length() # 38
+summary(kelp_area$year)
+
+# Landsat kelp quarters: Q1 = Winter, Q2 = Spring, Q3 = Summer, Q4 = Fall
 # make an sf object from dataframe
 kelp_area <- filter(area_df, quarter == 3) %>%
+  mutate_at(vars(year, quarter), list(as.factor)) %>%
   st_as_sf(coords = c('lon', 'lat'))
 
 # load kelp density predictions csv
@@ -57,4 +63,19 @@ density_df <- read.csv(paste(d.dir, 'NC_kelp_density_predictions.csv', sep ='/')
 kelp_density <- density_df %>%
   rename(lon = longitude, lat = latitude) %>%
   st_as_sf(coords = c('lon', 'lat'))
+
+# calculate the distance and match predicted kelp density to Landsat kelp area
+site_name <- kelp_density[, c('site_name', 'geometry')] %>% unique()
+area_1984 <- filter(kelp_area, year == 1984) # 37818
+# distance matrix for 1984
+mx <- st_distance(st_sfc(area_1984$geometry), st_sfc(site_name$geometry))
+colnames(mx) <- site_name$site_name
+head(mx)
+area_1984 <- filter(area_df, quarter == 3 & year == 1984) %>%
+  select(-year_quarter) %>%
+  mutate(
+    site_name = apply(mx, 1, FUN = function(x) names(x) [which.min(x)]), 
+    .before = lat
+  )
+head(area_1984)
 ```

@@ -41,14 +41,20 @@ w.dir <- here()
 d.dir <- here('data')
 
 # load kelp area csv
-kelp_area <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep ='/')) %>%
+area_df <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep ='/')) %>%
   glimpse()
 
 # Landsat Kelp quarters: Q1 = Winter, Q2 = Spring, Q3 = Summer, Q4 = Fall
-kelp_area <- filter(kelp_area, quarter == 3)
+# make an sf object from dataframe
+kelp_area <- filter(area_df, quarter == 3) %>%
+  st_as_sf(coords = c('lon', 'lat'))
 
 # load kelp density predictions csv
-kelp_density <- read.csv(paste(d.dir, 'NC_kelp_density_predictions.csv', sep ='/')) %>%
+density_df <- read.csv(paste(d.dir, 'NC_kelp_density_predictions.csv', sep ='/')) %>%
   glimpse()
-```
 
+# make an sf object from dataframe
+kelp_density <- density_df %>%
+  rename(lon = longitude, lat = latitude) %>%
+  st_as_sf(coords = c('lon', 'lat'))
+```

@@ -76,6 +76,47 @@ area_1984 <- filter(area_df, quarter == 3 & year == 1984) %>%
   mutate(
     site_name = apply(mx, 1, FUN = function(x) names(x) [which.min(x)]), 
     .before = lat
-  )
+  ) 
+  # group_by(site_name) %>%
+  # summarise(mean_area = mean(area, na.rm = TRUE),
+  #           se_area = std.error(area, na.rm = TRUE)) 
 head(area_1984)
+```
+
+```{r}
+# declaring an empty data frame
+kelp_area2 <- data.frame(site_name = character(), 
+                         lat = numeric(),
+                         lon = numeric(), 
+                         area = numeric(),
+                         year = numeric(),
+                         quarter = numeric())
+
+for (i in c(1984:2021)) {
+  area_year <- filter(kelp_area, year == i)
+  
+  # distance matrix for year i
+  mx <- st_distance(st_sfc(area_year$geometry), st_sfc(site_name$geometry))
+  colnames(mx) <- site_name$site_name
+  
+  area_year <- filter(area_df, quarter == 3 & year == i) %>%
+    select(-year_quarter) %>%
+    mutate(
+      site_name = apply(mx, 1, FUN = function(x) names(x) [which.min(x)]), 
+      .before = lat
+    ) 
+  
+  kelp_area2 <- rbind(kelp_area2, area_year)
+}
+dim(kelp_area2) # 38 * 37818 = 1437084
+
+head(kelp_area2)
+
+write.csv(kelp_area2, file.path(d.dir, 'NC_kelp_area_1984_2021_site_name.csv'), row.names = FALSE)
+```
+
+```{r}
+kelp_density <- read.csv(paste(d.dir, 'NC_kelp_area_1984_2021_site_name.csv', sep ='/')) 
+
+
 ```

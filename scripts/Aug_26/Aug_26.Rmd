@@ -62,6 +62,7 @@ density_df <- read.csv(paste(d.dir, 'NC_kelp_density_predictions.csv', sep ='/')
 
 # make an sf object from dataframe
 kelp_density <- density_df %>%
+  mutate_at(vars(year), list(as.factor)) %>%
   rename(lon = longitude, lat = latitude) %>%
   st_as_sf(coords = c('lon', 'lat'))
 
@@ -119,7 +120,8 @@ write.csv(kelp_area2, file.path(d.dir, 'NC_kelp_area_1984_2021_site_name.csv'), 
 ```
 
 ```{r}
-kelp_area <- read.csv(paste(d.dir, 'NC_kelp_area_1984_2021_site_name.csv', sep ='/'))
+kelp_area <- read.csv(paste(d.dir, 'NC_kelp_area_1984_2021_site_name.csv', sep ='/')) %>%
+  mutate_at(vars(year), list(as.factor))
 
 kelp_area$site_name %>% unique()
 
@@ -130,19 +132,27 @@ kelp_area3 <- kelp_area %>%
   
 
 ggplot() +
-  geom_pointrange(data = filter(kelp_area3, site_name == 'Fort Ross'),
+  geom_bar(data = filter(kelp_density, site_name == 'MacKerricher North'),
+           aes(x = year, y = fit,
+               fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')),
+           stat = 'identity', position = 'dodge', alpha = 0.2) + 
+  geom_pointrange(data = filter(kelp_area3, site_name == 'MacKerricher North'),
                   aes(x = year, y = mean_area, 
                       ymin = mean_area - se_area, ymax = mean_area + se_area),
-                  alpha = 0.5, size = 0.3) + 
-  geom_line() + 
-  theme_bw()
+                  alpha = 0.5, size = 0.3) +
+  geom_line(data = filter(kelp_area3, site_name == 'MacKerricher North'),
+            aes(x = year, y = mean_area, group = 1), size = 0.3) + 
+  scale_y_continuous(name = 'area',
+                     sec.axis = sec_axis(~./2, name = 'fit')) + 
+  labs(fill = 'fit >= 6.6') + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, size = 8),
+        plot.title = element_text(hjust = 0.5),
+        panel.grid.major = element_blank(),
+        legend.title = element_text(size = 9),
+        legend.text = element_text(size = 7))  
+  
 
-ggplot(data = filter(kelp_area3, site_name == 'Fort Ross'),
-            aes(x = year, y = mean_area)) + 
-  geom_line() + 
-  geom_point() + 
-  geom_errorbar(aes(ymin = mean_area - se_area, ymax = mean_area + se_area), width = 0.2) + 
-  theme_bw()
 
   # geom_bar(data = filter(kelp_density, site_name == 'Fort Ross'),
   #          aes(x = year, y = fit, 

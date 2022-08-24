@@ -116,7 +116,11 @@ write.csv(kelp_area2, file.path(d.dir, 'NC_kelp_area_1984_2021_site_name.csv'), 
 ```
 
 ```{r}
-kelp_density <- read.csv(paste(d.dir, 'NC_kelp_area_1984_2021_site_name.csv', sep ='/')) 
+kelp_area <- read.csv(paste(d.dir, 'NC_kelp_area_1984_2021_site_name.csv', sep ='/'))
 
+kelp_area$site_name %>% unique()
 
+ggplot() + 
+  geom_bar(data = filter(kelp_density, site_name == 'Fort Ross'),
+           aes(fill))
 ```

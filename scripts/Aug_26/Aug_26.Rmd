@@ -88,70 +88,72 @@ head(area_1984)
 
 ```{r}
 # declaring an empty data frame
-kelp_area2 <- data.frame(site_name = character(), 
-                         lat = numeric(),
-                         lon = numeric(), 
-                         area = numeric(),
-                         year = numeric(),
-                         quarter = numeric())
-
-for (i in c(1984:2021)) {
-  area_year <- filter(kelp_area, year == i)
-  
-  # distance matrix for year i
-  mx <- st_distance(st_sfc(area_year$geometry), st_sfc(site_name$geometry))
-  colnames(mx) <- site_name$site_name
-  
-  area_year <- area_df %>%
-    filter(quarter == 3 & year == i) %>%
-    select(-year_quarter) %>%
-    mutate(
-      site_name = apply(mx, 1, FUN = function(x) names(x) [which.min(x)]), 
-      .before = lat
-    ) 
-  
-  kelp_area2 <- rbind(kelp_area2, area_year)
-}
-dim(kelp_area2) # 38 * 37818 = 1437084
-
-head(kelp_area2)
-
-write.csv(kelp_area2, file.path(d.dir, 'NC_kelp_area_1984_2021_site_name.csv'), row.names = FALSE)
+# kelp_area2 <- data.frame(site_name = character(), 
+#                          lat = numeric(),
+#                          lon = numeric(), 
+#                          area = numeric(),
+#                          year = numeric(),
+#                          quarter = numeric())
+# 
+# for (i in c(1984:2021)) {
+#   area_year <- filter(kelp_area, year == i)
+#   
+#   # distance matrix for year i
+#   mx <- st_distance(st_sfc(area_year$geometry), st_sfc(site_name$geometry))
+#   colnames(mx) <- site_name$site_name
+#   
+#   area_year <- area_df %>%
+#     filter(quarter == 3 & year == i) %>%
+#     select(-year_quarter) %>%
+#     mutate(
+#       site_name = apply(mx, 1, FUN = function(x) names(x) [which.min(x)]), 
+#       .before = lat
+#     ) 
+#   
+#   kelp_area2 <- rbind(kelp_area2, area_year)
+# }
+# dim(kelp_area2) # 38 * 37818 = 1437084
+# 
+# head(kelp_area2)
+# 
+# write.csv(kelp_area2, file.path(d.dir, 'NC_kelp_area_1984_2021_site_name.csv'), row.names = FALSE)
 ```
 
 ```{r}
 kelp_area <- read.csv(paste(d.dir, 'NC_kelp_area_1984_2021_site_name.csv', sep ='/')) %>%
   mutate_at(vars(year), list(as.factor))
 
-kelp_area$site_name %>% unique()
-
 kelp_area3 <- kelp_area %>%
   group_by(site_name, year) %>%
   summarise(mean_area = mean(area, na.rm = TRUE),
             se_area = std.error(area, na.rm = TRUE))
   
+sites <- kelp_area3$site_name %>% unique()
 
-ggplot() +
-  geom_bar(data = filter(kelp_density, site_name == 'MacKerricher North'),
-           aes(x = year, y = fit,
-               fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')),
-           stat = 'identity', position = 'dodge', alpha = 0.2) + 
-  geom_pointrange(data = filter(kelp_area3, site_name == 'MacKerricher North'),
-                  aes(x = year, y = mean_area, 
-                      ymin = mean_area - se_area, ymax = mean_area + se_area),
-                  alpha = 0.5, size = 0.3) +
-  geom_line(data = filter(kelp_area3, site_name == 'MacKerricher North'),
-            aes(x = year, y = mean_area, group = 1), size = 0.3) + 
-  scale_y_continuous(name = 'area',
-                     sec.axis = sec_axis(~./2, name = 'fit')) + 
-  labs(fill = 'fit >= 6.6') + 
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, size = 8),
-        plot.title = element_text(hjust = 0.5),
-        panel.grid.major = element_blank(),
-        legend.title = element_text(size = 9),
-        legend.text = element_text(size = 7))  
-  
+for (i in sites) {
+  plot <- ggplot() +
+    geom_bar(data = filter(kelp_density, site_name == i),
+             aes(x = year, y = fit,
+                 fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')),
+             stat = 'identity', position = 'dodge', alpha = 0.2) + 
+    geom_pointrange(data = filter(kelp_area3, site_name == i),
+                    aes(x = year, y = mean_area, 
+                        ymin = mean_area - se_area, 
+                        ymax = mean_area + se_area),
+                    alpha = 0.5, size = 0.3) +
+    geom_line(data = filter(kelp_area3, site_name == i),
+              aes(x = year, y = mean_area, group = 1), size = 0.3) + 
+    scale_y_continuous(name = 'area',
+                       sec.axis = sec_axis(~./2, name = 'fit')) + 
+    labs(fill = 'fit >= 6.6', title = i) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, size = 8),
+          plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank(),
+          legend.title = element_text(size = 9),
+          legend.text = element_text(size = 7))
+  print(plot)
+}  
 
 
   # geom_bar(data = filter(kelp_density, site_name == 'Fort Ross'),

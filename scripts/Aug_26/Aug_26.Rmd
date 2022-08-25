@@ -47,7 +47,6 @@ area_df <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep ='/')
 # vector of year
 area_df$year %>% unique() # 1984 - 2021
 area_df$year %>% unique() %>% length() # 38
-summary(kelp_area$year)
 
 # Landsat kelp quarters: Q1 = Winter, Q2 = Spring, Q3 = Summer, Q4 = Fall
 # make an sf object from dataframe
@@ -65,7 +64,11 @@ kelp_density <- density_df %>%
   mutate_at(vars(year), list(as.factor)) %>%
   rename(lon = longitude, lat = latitude) %>%
   st_as_sf(coords = c('lon', 'lat'))
+```
 
+To compute a distance matrix between each site location and the kelp area for each summer, and find the closest landsat pixel to each site. 
+
+```{r}
 # calculate the distance and match predicted kelp density to Landsat kelp area
 site_name <- kelp_density[, c('site_name', 'geometry')] %>% unique()
 area_1984 <- filter(kelp_area, year == 1984) # 37818
@@ -87,6 +90,7 @@ head(area_1984)
 ```
 
 ```{r}
+# using for loop
 # declaring an empty data frame
 # kelp_area2 <- data.frame(site_name = character(), 
 #                          lat = numeric(),
@@ -116,10 +120,12 @@ head(area_1984)
 # 
 # head(kelp_area2)
 # 
+# write to file
 # write.csv(kelp_area2, file.path(d.dir, 'NC_kelp_area_1984_2021_site_name.csv'), row.names = FALSE)
 ```
 
-```{r}
+```{r, fig.width = 7, fig.height = 5}
+# plotting
 kelp_area <- read.csv(paste(d.dir, 'NC_kelp_area_1984_2021_site_name.csv', sep ='/')) %>%
   mutate_at(vars(year), list(as.factor))
 
@@ -147,24 +153,11 @@ for (i in sites) {
                        sec.axis = sec_axis(~./2, name = 'fit')) + 
     labs(fill = 'fit >= 6.6', title = i) + 
     theme_bw() + 
-    theme(axis.text.x = element_text(angle = 90, size = 8),
+    theme(axis.text.x = element_text(angle = 90, size = 7),
           plot.title = element_text(hjust = 0.5),
           panel.grid.major = element_blank(),
           legend.title = element_text(size = 9),
           legend.text = element_text(size = 7))
   print(plot)
 }  
-
-
-  # geom_bar(data = filter(kelp_density, site_name == 'Fort Ross'),
-  #          aes(x = year, y = fit, 
-  #              fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')),
-  #          stat = 'identity', position = 'dodge', alpha = 0.2) + 
-  # theme_bw() + 
-  # theme(axis.text.x = element_text(angle = 90, size = 8), 
-  #         plot.title = element_text(hjust = 0.5),
-  #         panel.grid.major = element_blank(),
-  #         legend.title = element_text(size = 9),
-  #         legend.text = element_text(size = 7)) + 
-  # labs(y = 'log of kelp density', title = i, fill = 'fit >= 6.6')
 ```

@@ -75,11 +75,11 @@ rm(list=ls())
 # directories ----
 m.dir <- here()
 d.dir <- here('data')
-k.dir <- here('outputs_nc_rcca')
-o.dir <- paste(k.dir, "gam_V5", sep ='/') # kelp model results
-u.dir <- paste(k.dir, "gam_urchins3", sep ='/') # urchin model results
-rcca.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/R_Projects/North_Coast_w_RCCA/raw_data"
-dd.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/R_Projects/Extract_env_data/nc.rcca.outputs"
+# k.dir <- here('outputs_nc_rcca')
+# o.dir <- paste(k.dir, "gam_V5", sep ='/') # kelp model results
+# u.dir <- paste(k.dir, "gam_urchins3", sep ='/') # urchin model results
+# rcca.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/R_Projects/North_Coast_w_RCCA/raw_data"
+# dd.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/R_Projects/Extract_env_data/nc.rcca.outputs"
 
 ## Load info on years RCCA ----
 years <- read.csv(paste(d.dir, "RCCA_North_Coast_sites.csv", sep ='/')) %>%
@@ -92,7 +92,7 @@ ncsites <- years %>%
   # get only sites with PRE MHW data 
   dplyr::filter(pre.mhw.years > 2) %>%
   droplevels() %>%
-  glimpse() # Rows: 64
+  glimpse() # Rows: 10
 ```
 
 ## 1. Load RCCA data
@@ -566,6 +566,8 @@ names(year.raster) <- 'year'
 
 # outputs dir ----
 # * use an output directory of yours
+o2.dir <- here('spatial_data')
+
 preds.dir <- paste(o2.dir, "preds", sep ='/')
 preds.dir
 
@@ -618,7 +620,7 @@ for (i in 1:length(year.list)) {
     glimpse()
   
   # 5. predict
-  year.pred.df <- predict.gam(nereo.mod, newdata=df4, type='response', se.fit=T)
+  year.pred.df <- predict.gam(nereo.mod, newdata = df4, type = 'response', se.fit = T)
   head(year.pred.df)
   
   # join with df for lats and lons

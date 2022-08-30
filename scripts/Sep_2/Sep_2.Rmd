@@ -635,7 +635,8 @@ for (i in 1:length(year.list)) {
   plot(year.prediction)
   
   # 7. save raw raster
-  name.raster <- paste(year.no, "Log_Nereo_GIVE_IT_A_NAME.tif", sep = '_')
+  # name.raster <- paste(year.no, "Log_Nereo_GIVE_IT_A_NAME.tif", sep = '_')
+  name.raster <- paste(year.no, "Log_Nereo_NC.tif", sep = '_')
   writeRaster(year.prediction, paste(preds.dir, name.raster, sep = '/'))
   
   # 8. scale by rock
@@ -643,7 +644,8 @@ for (i in 1:length(year.list)) {
   year.prediction2 <- rock4*year.prediction
   
   # 9. save rastr scaled by rock
-  name.raster.rock <- paste(year.no, "Log_Nereo_rock__GIVE_IT_A_NAME.tif", sep = '_')
+  # name.raster.rock <- paste(year.no, "Log_Nereo_rock__GIVE_IT_A_NAME.tif", sep = '_')
+  name.raster.rock <- paste(year.no, "Log_Nereo_rock_NC.tif", sep = '_')
   writeRaster(year.prediction2, paste(rock.preds.dir, name.raster.rock, sep = '/'))
 }
 ```

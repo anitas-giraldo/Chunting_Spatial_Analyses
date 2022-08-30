@@ -319,11 +319,11 @@ p
 
 ### Get depth ----
 
-depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/rasters"
+depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/depth"
 
 names(dat2)
 
-depth <- rast(paste(depth.dir, "depth_mean_nc_all_wInterp_300m_30m.tif", sep ='/'))
+depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_300m_30m.tif", sep ='/'))
 plot(depth)
 
 n.extent <- ext(depth)
@@ -336,7 +336,7 @@ n.extent <- ext(d2)
 
 ```{r}
 ## Get rock ----
-sub.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/rasters"
+sub.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/rock"
 
 dir(sub.dir)
 
@@ -471,8 +471,9 @@ length(u.files)
 
 preds1 <- c(max_nit4[[1]], whmax.stack4[[1]], ubr5[[1]])
 names(preds1)
+```
 
-
+```{r}
 # get year raster ----
 
 year1998 <- classify(max_nit4[[1]], cbind(0, Inf, 1998), right=FALSE)
@@ -489,8 +490,9 @@ names(preds2) <- c("Max_Monthly_Nitrate" ,
                    "wh_max", 
                    "log_UBR_Max",                         
                    "year") 
+```
 
-
+```{r}
 # sites ----
 
 rdf <- as.data.frame(year1998, xy = T)
@@ -515,10 +517,9 @@ names(preds3) <- c("Max_Monthly_Nitrate"  ,
                    "log_UBR_Max",                         
                    "year" ,   
                    "site_name") 
+```
 
-
-##
-
+```{r}
 # zone ----
 
 zone.raster <- d2
@@ -543,12 +544,12 @@ names(preds4) <- c("Max_Monthly_Nitrate" ,
                    "year",    
                    "site_name",
                    "zone")
+```
 
 
+## LOOP to predict each year using data frame
 
-
-## LOOP to predict each year using data frame ----
-
+```{r}
 nereo.mod <- gam1
 summary(nereo.mod)
 
@@ -563,8 +564,6 @@ names(year.raster) <- 'year'
 
 # make zone raster ---- 
 
-
-
 # outputs dir ----
 # * use an output directory of yours
 preds.dir <- paste(o2.dir, "preds", sep ='/')
@@ -574,8 +573,6 @@ preds.dir
 # * use an output directory of yours
 rock.preds.dir <- paste(o2.dir, "rock_preds", sep ='/')
 rock.preds.dir
-
-
 
 
 for (i in 1:length(year.list)) {

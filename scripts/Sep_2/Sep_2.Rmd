@@ -319,7 +319,7 @@ p
 
 ### Get depth ----
 
-depth.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/Data/Susbtrate_aggregated"
+depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/rasters"
 
 names(dat2)
 
@@ -332,10 +332,11 @@ crs1 <- "epsg:4326"
 d2 <- project(depth, crs1)
 
 n.extent <- ext(d2)
+```
 
-
+```{r}
 ## Get rock ----
-sub.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/Data/Susbtrate_aggregated"
+sub.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/rasters"
 
 dir(sub.dir)
 
@@ -348,8 +349,9 @@ plot(rock2)
 
 rock3 <- resample(rock2, d2)
 plot(rock3)
+```
 
-
+```{r}
 ### Get Env predictors  ----
 
 re.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors"
@@ -369,17 +371,18 @@ max_nit3 <- resample(max_nit2, d2)
 # mask predictors to bathy ----
 max_nit4 <- mask(max_nit3, d2)
 plot(max_nit4[[1]])
+```
 
-
+```{r}
 ### Get Wave predictors  ----
 
-w.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/Data/Environmental/Wave_data"
+w.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors"
 
 ## Max Wave height --
 
 # load raster data --
 
-wave.dir <- paste(w.dir, "Wave_extended2", "wh_max", sep ='/')
+wave.dir <- paste(w.dir, "waves", "wh_max", sep ='/')
 
 # load raster data --
 
@@ -415,11 +418,12 @@ whmax.stack3 <- resample(whmax.stack2, d2)
 # mask predictors to bathy ----
 whmax.stack4 <- mask(whmax.stack3, d2)
 plot(whmax.stack4[[1]])
+```
 
-
+```{r}
 ## Mean UBR MAX ----
 
-w2.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/Data/Environmental/Seagrant_OPC_Environmental_Data/Waves_UBR_30m"
+w2.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/orbital_vel"
 
 # load raster data --
 
@@ -446,11 +450,13 @@ ubr4 <- mask(ubr3, d2)
 plot(ubr4[[1]])
 
 ubr5 <- log(ubr4)
+```
 
+```{r}
 ### Get urchins ----
 
 # load purple urchin predictions ----
-urch.dir <- "G:/Shared drives/California Kelp Restoration Project - Seagrant/R_Projects/Spatio_temporal_GAMs/outputs_nc_rcca/gam_urchins3/log_sp_predictions"
+urch.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/urchins/log_sp_predictions"
 
 # load raster data --
 
@@ -459,10 +465,7 @@ u.files <- list.files(urch.dir, pattern = '.tif')
 u.files
 length(u.files)
 
-
 ##
-
-
 
 # stack rasters --
 

@@ -380,7 +380,7 @@ re.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors"
 
 ### Get nitrate predictors  ----
 max_nit <- rast(paste(re.dir, "Nitrate", "Max_Monthly_Nitrate.tif", sep ='/'))
-max_nit
+max_nit # multiple layers
 
 # # crop to NC --
 max_nit2 <- crop(max_nit, n.extent)

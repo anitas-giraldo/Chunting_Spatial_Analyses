@@ -117,8 +117,8 @@ df <- read.csv(paste(d.dir, "RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit
 df.nc <- df %>%
   dplyr::select(-c(latitude, longitude)) %>%
   right_join(ncsites, by = c('site_name')) %>%
-  droplevels() %>% #glimpse()
-  #dplyr::select(-c(total.years, pre.mhw.years, during.mhw.years, post.mhw.years)) %>%
+  droplevels() %>% # glimpse()
+  # dplyr::select(-c(total.years, pre.mhw.years, during.mhw.years, post.mhw.years)) %>%
   relocate(c(latitude, longitude), .after = zone) %>%
   glimpse() # Rows: 708
 
@@ -185,7 +185,7 @@ dat1 <- df.nc %>%
   dplyr::select(-c(Days_16C)) %>%
   # Orb vel transformations
   mutate(log_UBR_Mean = log(UBR_Mean + 1),
-         log_UBR_Max = log(UBR_Max +1)) %>%
+         log_UBR_Max = log(UBR_Max + 1)) %>%
   dplyr::select(-c(UBR_Mean,
                    UBR_Max)) %>%
   # NPP transformations
@@ -195,6 +195,7 @@ dat1 <- df.nc %>%
                    Min_Monthly_NPP)) %>%
   glimpse() # Rows: 708
 
+# log(x + 1) avoids log(0) 
 
 #### Drop NAs ----
 dat2 <- dat1 %>%
@@ -226,15 +227,31 @@ gam1 <- gam(formula = log_den_NERLUE ~
                 s(site_name, zone, bs = "re") + 
                 s(year, bs = "re"), 
               family = tw(), data = dat2, method = "REML")
+
+# k: the dimension of the basis used to represent the smooth terms
+# bs = 'cr': cubic regression splines
+# bs = 're': random effects, penalized by a ridge penalty
 ```
 
 ## 5. Check GAM
 
 ```{r}
-gam1$aic
-gam1$deviance
+gam1$aic # model selection?
+gam1$deviance # goodness of fit
 summary(gam1)
-gam.check(gam1)
+gam.check(gam1) # model diagnostic plots
+
+# The effective degrees of freedom (EDF) reflects the degree of non-linearity 
+# of a curve. As the edf increasingly exceeds 2, the degree of non-linearity
+# progressively increases.
+
+# Residual plotting aims to show that there is something wrong with the model 
+# assumptions.
+# The key assumptions are
+# 1. The assumed mean variance relationship is correct, so that scaled residuals 
+# have constant variance.
+# 2. The response data are independent, so that the residuals appear approximately 
+# so.
 
 # visualize responses
 par(mfrow = c(3, 3), mar = c(2, 4, 3, 1))
@@ -264,11 +281,11 @@ fits <- predict.gam(gam1, newdata = testdata, type = 'response', se.fit = T)
 predicts.year <- testdata %>%
   data.frame(fits) %>%
   group_by(year) %>% #only change here
-  summarise(response=mean(fit, na.rm = T), se.fit = mean(se.fit, na.rm = T))%>%
+  summarise(response = mean(fit, na.rm = T), se.fit = mean(se.fit, na.rm = T)) %>%
   ungroup()
 
 
-ggmod.year <- ggplot(aes(x = year, y = response,fill = year), data = predicts.year) +
+ggmod.year <- ggplot(aes(x = year, y = response, fill = year), data = predicts.year) +
   ylab(" ")+
   xlab('survey_year')+
   scale_fill_viridis(discrete = T) +
@@ -276,7 +293,7 @@ ggmod.year <- ggplot(aes(x = year, y = response,fill = year), data = predicts.ye
   geom_errorbar(aes(ymin = response - se.fit, ymax = response + se.fit),width = 0.5) +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, h = 1))
-
+ 
 ggmod.year
 ```
 
@@ -328,6 +345,8 @@ plot(depth)
 
 n.extent <- ext(depth)
 
+# depth # EPSG:26910
+
 crs1 <- "epsg:4326"
 d2 <- project(depth, crs1)
 
@@ -343,12 +362,14 @@ dir(sub.dir)
 rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_300m_wInterp.tif", sep ='/'))
 rock 
 
-# crop to NC --
+# # crop to NC --
 rock2 <- crop(rock, ext(d2))
 plot(rock2)
 
 rock3 <- resample(rock2, d2)
 plot(rock3)
+# Resample transfers values between non matching Raster objects (in terms of origin)
+# and resolution).
 ```
 
 ```{r}

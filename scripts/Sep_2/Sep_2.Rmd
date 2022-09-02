@@ -70,7 +70,7 @@ Predict and project spatially the result from the models.
 ## Last modified by Anita Giraldo, 4 May 2022
 
 # Clear environment ----
-rm(list=ls())
+# rm(list=ls())
 
 # directories ----
 m.dir <- here()
@@ -348,7 +348,7 @@ n.extent <- ext(depth)
 # depth # EPSG:26910
 
 crs1 <- "epsg:4326"
-d2 <- project(depth, crs1)
+d2 <- project(depth, crs1) # depth # EPSG:4326
 
 n.extent <- ext(d2)
 ```
@@ -455,7 +455,8 @@ ubr <- project(ubr, rock)
 
 plot(ubr[[1]])
 
-ubr1 <- classify(ubr, cbind(0, NA))
+ubr1 <- classify(ubr, cbind(0, NA)) # assign the raster values 0 are reclassified
+                                    # to take values NA
 plot(ubr1[[1]])
 
 
@@ -497,7 +498,9 @@ names(preds1)
 ```{r}
 # get year raster ----
 
-year1998 <- classify(max_nit4[[1]], cbind(0, Inf, 1998), right=FALSE)
+# assign the raster values in the range 0-Inf are reclassifed to take values 1998
+# max_nit4 has 24 layers
+year1998 <- classify(max_nit4[[1]], cbind(0, Inf, 1998), right=FALSE) 
 plot(year1998)
 names(year1998) <- 'year'
 
@@ -519,10 +522,10 @@ names(preds2) <- c("Max_Monthly_Nitrate" ,
 rdf <- as.data.frame(year1998, xy = T)
 head(rdf)
 rdf$site <- rdf$y
-rdf <- rdf[,-3]
+rdf <- rdf[,-3] # remove the column 'year'
 head(rdf)
 
-site.raster <- rast(rdf, type = 'xyz', crs="EPSG:4326", extent = ext(year1998))
+site.raster <- rast(rdf, type = 'xyz', crs = "EPSG:4326", extent = ext(year1998))
 site.raster
 
 plot(site.raster)
@@ -551,9 +554,12 @@ levels(dat2$zone)
 rec.m <-  c(-Inf, -10, 2,
             -10, 0.1, 1)
 
-rclmat <- matrix(rec.m, ncol=3, byrow=TRUE)
+rclmat <- matrix(rec.m, ncol = 3, byrow = TRUE)
+#      [,1]  [,2] [,3]
+# [1,] -Inf -10.0    2
+# [2,]  -10   0.1    1
 
-zone.raster2 <- classify(zone.raster, rclmat, right=FALSE)
+zone.raster2 <- classify(zone.raster, rclmat, right = FALSE)
 plot(zone.raster2)
 
 preds4 <- c(preds3, zone.raster2)

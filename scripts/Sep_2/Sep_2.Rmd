@@ -220,12 +220,13 @@ test.gam  <- dat2[-inTraining,]
 
 ```{r}
 gam1 <- gam(formula = log_den_NERLUE ~ 
-                s(log_den_STRPURAD, k = 5, bs = "cr") +
+                s(log_den_STRPURAD, k = 5, bs = "cr") + # purple sea urchins
                 s(Max_Monthly_Nitrate, k = 5, bs = "cr") + 
-                s(wh_max, k = 5, bs = "cr") +
-                s(log_UBR_Max, k = 4, bs = "cr") +
-                s(site_name, zone, bs = "re") + 
-                s(year, bs = "re"), 
+                s(wh_max, k = 5, bs = "cr") + # wave height
+                s(log_UBR_Max, k = 4, bs = "cr") + # orbital velocity, continuous variables
+                s(site_name, zone, bs = "re") + # zone is nested within site
+                s(year, bs = "re"), # discrete variables, categorical
+            # random factor
               family = tw(), data = dat2, method = "REML")
 
 # k: the dimension of the basis used to represent the smooth terms
@@ -434,10 +435,10 @@ whmax.stack2 <- crop(whmax.stack, n.extent)
 plot(whmax.stack2[[1]])
 
 # resample predictors to bathy ----
-whmax.stack3 <- resample(whmax.stack2, d2)
+whmax.stack3 <- resample(whmax.stack2, d2) # align origin, aggregate or disaggregate to have same resolution and coordinate system
 
 # mask predictors to bathy ----
-whmax.stack4 <- mask(whmax.stack3, d2)
+whmax.stack4 <- mask(whmax.stack3, d2) # make NA do not match to the d2 extent
 plot(whmax.stack4[[1]])
 ```
 
@@ -498,9 +499,11 @@ names(preds1)
 ```{r}
 # get year raster ----
 
+# make rasters for site, year, zone
+
 # assign the raster values in the range 0-Inf are reclassifed to take values 1998
 # max_nit4 has 24 layers
-year1998 <- classify(max_nit4[[1]], cbind(0, Inf, 1998), right=FALSE) 
+year1998 <- classify(max_nit4[[1]], cbind(0, Inf, 1998), right = FALSE) 
 plot(year1998)
 names(year1998) <- 'year'
 
@@ -556,7 +559,7 @@ rec.m <-  c(-Inf, -10, 2,
 
 rclmat <- matrix(rec.m, ncol = 3, byrow = TRUE)
 #      [,1]  [,2] [,3]
-# [1,] -Inf -10.0    2
+# [1,] -Inf -10.0    2 
 # [2,]  -10   0.1    1
 
 zone.raster2 <- classify(zone.raster, rclmat, right = FALSE)

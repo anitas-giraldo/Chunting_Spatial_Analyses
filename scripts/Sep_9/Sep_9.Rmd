@@ -68,17 +68,13 @@ Predict and project spatially the result from the models.
 ```{r}
 ## Script by Anita Giraldo, 4 May 2022
 ## Last modified by Anita Giraldo, 4 May 2022
-
 # Clear environment ----
 # rm(list=ls())
-
 # directories ----
 m.dir <- here()
 d.dir <- here('data')
-
 ## Load info on years RCCA ----
 years <- read.csv(paste(d.dir, "RCCA_North_Coast_sites.csv", sep ='/')) # Rows: 25
-
 # get the sites from with preMHW data ----
 # 3 or more pre MHW surveys
 ncsites <- years %>%
@@ -104,7 +100,6 @@ df <- read.csv(paste(d.dir, "RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit
   rename(zone = zone_new) %>%
   mutate_at(vars(zone), list(as.factor)) %>%
   relocate(zone, .after = transect) # Rows: 1,154
-
 ## get the sites for North Coast model ----
 df.nc <- df %>%
   dplyr::select(-c(latitude, longitude)) %>%
@@ -112,7 +107,6 @@ df.nc <- df %>%
   droplevels() %>% # glimpse()
   # dplyr::select(-c(total.years, pre.mhw.years, during.mhw.years, post.mhw.years)) %>%
   relocate(c(latitude, longitude), .after = zone) # Rows: 708
-
 length(levels(df.nc$site_name)) # 10
 levels(df.nc$site_name)
 any(is.na(df.nc$Max_Monthly_Anomaly_Temp)) # FALSE
@@ -122,7 +116,6 @@ any(is.na(df.nc$Max_Monthly_Anomaly_Temp)) # FALSE
 
 ```{r}
 # names(df.nc)
-
 dat1 <- df.nc %>%
   dplyr::select(
     # Factors 
@@ -184,14 +177,10 @@ dat1 <- df.nc %>%
          log_Min_Monthly_NPP = log(Min_Monthly_NPP + 1)) %>%
   dplyr::select(-c(Mean_Monthly_NPP_Upwelling,
                    Min_Monthly_NPP)) # Rows: 708
-
 # log(x + 1) avoids log(0) 
-
 #### Drop NAs ----
 dat2 <- dat1 %>%
   drop_na() # Rows: 686
-
-
 # glimpse(dat2)
 levels(dat2$year)
 ```
@@ -217,7 +206,6 @@ gam1 <- gam(formula = log_den_NERLUE ~
                 s(year, bs = "re"), # discrete variables, categorical
             # random factor
               family = tw(), data = dat2, method = "REML")
-
 # k: the dimension of the basis used to represent the smooth terms
 # bs = 'cr': cubic regression splines
 # bs = 're': random effects, penalized by a ridge penalty
@@ -230,11 +218,9 @@ gam1$aic # model selection?
 gam1$deviance # goodness of fit
 summary(gam1)
 gam.check(gam1) # model diagnostic plots
-
 # The effective degrees of freedom (EDF) reflects the degree of non-linearity 
 # of a curve. As the edf increasingly exceeds 2, the degree of non-linearity
 # progressively increases.
-
 # Residual plotting aims to show that there is something wrong with the model 
 # assumptions.
 # The key assumptions are
@@ -242,7 +228,6 @@ gam.check(gam1) # model diagnostic plots
 # have constant variance.
 # 2. The response data are independent, so that the residuals appear approximately 
 # so.
-
 # visualize responses
 par(mfrow = c(3, 3), mar = c(2, 4, 3, 1))
 visreg(gam1)
@@ -260,21 +245,15 @@ testdata <- dat2 %>%
                 "wh_max",
                 "log_den_NERLUE",
                 "site_name", "zone", "year")
-
 # head(testdata)
-
 # fit the data
 fits <- predict.gam(gam1, newdata = testdata, type = 'response', se.fit = T)
-
-
 ## predict average kelp per year --
 predicts.year <- testdata %>%
   data.frame(fits) %>%
   group_by(year) %>% #only change here
   summarise(response = mean(fit, na.rm = T), se.fit = mean(se.fit, na.rm = T)) %>%
   ungroup()
-
-
 ggmod.year <- ggplot(aes(x = year, y = response, fill = year), data = predicts.year) +
   ylab(" ")+
   xlab('survey_year')+
@@ -295,13 +274,9 @@ predicts.all <-  testdata %>%
   #group_by(survey_year) %>% #only change here
   #summarise(response=mean(fit), se.fit = mean(se.fit)) %>%
   ungroup() 
-
-
 # Plot observed vs. predicted --
 library(ggpmisc)
-
 my.formula <- y ~ x
-
 p <- ggplot(predicts.all, aes(x = fit, y = log_den_NERLUE)) +
   geom_smooth(method = "lm", se=FALSE, color="black", formula = my.formula) +
   stat_poly_eq(formula = my.formula, 
@@ -322,13 +297,9 @@ p
 # log_UBR_Max
 # wh_max
 # log_den_STRPURAD
-
 ### Get depth ----
-
 depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/depth"
-
 # names(dat2)
-
 # depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_300m_30m.tif", sep ='/'))
 # aggregate from 300x300 resolution to 900x900 (factor = 3)
 # depth2 <- aggregate(depth, fact = 3, fun = mean, na.rm = TRUE)
@@ -338,24 +309,17 @@ depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors
 # writeRaster(depth3, file.path(depth.dir, 'depth_mean_nc.all_wInterp_150m_30m.tif'), overwrite = TRUE)
 depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_900m_30m.tif", sep ='/'))
 # plot(depth)
-
-
 n.extent <- ext(depth)
-
 # depth # EPSG:26910
-
 crs1 <- "epsg:4326"
 d2 <- project(depth, crs1) # depth # EPSG:4326
-
 n.extent <- ext(d2)
 ```
 
 ```{r}
 ## Get rock ----
 sub.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/rock"
-
 # dir(sub.dir)
-
 # rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_300m_wInterp.tif", sep ='/'))
 # aggregate from 300x300 resolution to 900x900 (factor = 3)
 # rock2 <- aggregate(rock, fact = 3, fun = mean, na.rm = TRUE)
@@ -365,35 +329,26 @@ sub.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/r
 # writeRaster(rock3, file.path(sub.dir, 'prob_rock_nc_MASKED_LatLong_all_150m_wInterp.tif'), overwrite = TRUE)
 rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_900m_wInterp.tif", sep ='/'))
 # rock 
-
 # # crop to NC --
 rock2 <- crop(rock, ext(d2))
 # plot(rock2)
-
 rock3 <- resample(rock2, d2)
 # plot(rock3)
-
 # Resample transfers values between non matching Raster objects (in terms of origin)
 # and resolution).
 ```
 
 ```{r}
 ### Get Env predictors  ----
-
 re.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors"
-
-
 ### Get nitrate predictors  ----
 max_nit <- rast(paste(re.dir, "Nitrate", "Max_Monthly_Nitrate.tif", sep ='/'))
 # max_nit # multiple layers
-
 # # crop to NC --
 max_nit2 <- crop(max_nit, n.extent)
 # plot(max_nit2[[1]])
-
 # resample predictors to bathy ----
 max_nit3 <- resample(max_nit2, d2)
-
 # mask predictors to bathy ----
 max_nit4 <- mask(max_nit3, d2)
 # plot(max_nit4[[1]])
@@ -401,17 +356,11 @@ max_nit4 <- mask(max_nit3, d2)
 
 ```{r}
 ### Get Wave predictors  ----
-
 w.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors"
-
 ## Max Wave height --
-
 # load raster data --
-
 wave.dir <- paste(w.dir, "waves", "wh_max", sep ='/')
-
 # load raster data --
-
 n.files <- dir(wave.dir)
 # list files in source --
 n.files <- list.files(wave.dir, pattern = '.tif$', full.names = TRUE)
@@ -421,26 +370,19 @@ n.files <- list.files(wave.dir, pattern = '.tif$', full.names = TRUE)
 names.list <- list.files(wave.dir, pattern = '.tif$')
 names.list <- str_replace(names.list, ".tif$", "")
 # length(names.list)
-
 # load csv files as a list --
 tfiles <- lapply(n.files, rast) # this is a list
 # tfiles[[1]] 
-
 # stack them ---
 whmax.stack <- c()
-
 # use do call to create a raster otherwise it creates a list
 whmax.stack <- do.call("c", tfiles)
 # plot(whmax.stack[[1]])
-
-
 # # crop to NC --
 whmax.stack2 <- crop(whmax.stack, n.extent)
 # plot(whmax.stack2[[1]])
-
 # resample predictors to bathy ----
 whmax.stack3 <- resample(whmax.stack2, d2) # align origin, aggregate or disaggregate to have same resolution and coordinate system
-
 # mask predictors to bathy ----
 whmax.stack4 <- mask(whmax.stack3, d2) # make NA do not match to the d2 extent
 # plot(whmax.stack4[[1]])
@@ -448,75 +390,53 @@ whmax.stack4 <- mask(whmax.stack3, d2) # make NA do not match to the d2 extent
 
 ```{r}
 ## Mean UBR MAX ----
-
 w2.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/orbital_vel"
-
 # load raster data --
-
 ubr <- rast(paste(w2.dir, "UBR_Max_30m_NC.tif", sep ='/'))
 # plot(ubr[[1]])
-
 ubr <- project(ubr, rock)
-
 # plot(ubr[[1]])
-
 ubr1 <- classify(ubr, cbind(0, NA)) # assign the raster values 0 are reclassified
                                     # to take values NA
 # plot(ubr1[[1]])
-
-
 # # crop to NC --
 ubr2 <- crop(ubr1, n.extent)
 # plot(ubr2[[1]])
-
 # resample predictors to bathy ----
 ubr3 <- resample(ubr2, d2)
-
 # mask predictors to bathy ----
 ubr4 <- mask(ubr3, d2)
 # plot(ubr4[[1]])
-
 ubr5 <- log(ubr4)
 ```
 
 ```{r}
 ### Get urchins ----
-
 # load purple urchin predictions ----
 urch.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/urchins/log_sp_predictions"
-
 # load raster data --
-
 u.files <- dir(urch.dir)
 u.files <- list.files(urch.dir, pattern = '.tif')
 # u.files
 # length(u.files)
-
 ##
-
 # stack rasters --
-
 preds1 <- c(max_nit4[[1]], whmax.stack4[[1]], ubr5[[1]])
 # names(preds1)
 ```
 
 ```{r}
 # get year raster ----
-
 # make rasters for site, year, zone
-
 # assign the raster values in the range 0-Inf are reclassifed to take values 1998
 # max_nit4 has 24 layers
 year1998 <- classify(max_nit4[[1]], cbind(0, Inf, 1998), right = FALSE) 
 # plot(year1998)
 names(year1998) <- 'year'
-
 year.list <- paste(1998:2021)
 length(year.list)
-
 preds2 <- c(preds1, year1998)
 # names(preds2)
-
 names(preds2) <- c("Max_Monthly_Nitrate" , 
                    "wh_max", 
                    "log_UBR_Max",                         
@@ -530,17 +450,12 @@ rdf <- as.data.frame(year1998, xy = T)
 rdf$site <- rdf$y
 rdf <- rdf[,-3] # remove the column 'year'
 # head(rdf)
-
 site.raster <- rast(rdf, type = 'xyz', crs = "EPSG:4326", extent = ext(year1998))
 # site.raster
-
 # plot(site.raster)
-
 ext(year1998)
 ext(site.raster)
-
 site.raster2 <- extend(site.raster, year1998)
-
 preds3 <- c(preds2, site.raster2)
 names(preds3) <- c("Max_Monthly_Nitrate"  , 
                    "wh_max", 
@@ -551,26 +466,20 @@ names(preds3) <- c("Max_Monthly_Nitrate"  ,
 
 ```{r}
 # zone ----
-
 zone.raster <- d2
 names(zone.raster) <- 'zone'
 # plot(zone.raster)
 # levels(dat2$zone)
-
 rec.m <-  c(-Inf, -10, 2,
             -10, 0.1, 1)
-
 rclmat <- matrix(rec.m, ncol = 3, byrow = TRUE)
 #      [,1]  [,2] [,3]
 # [1,] -Inf -10.0    2 
 # [2,]  -10   0.1    1
-
 zone.raster2 <- classify(zone.raster, rclmat, right = FALSE)
 # plot(zone.raster2)
-
 preds4 <- c(preds3, zone.raster2)
 # names(preds4)
-
 names(preds4) <- c("Max_Monthly_Nitrate" , 
                    "wh_max", 
                    "log_UBR_Max",                         
@@ -585,31 +494,23 @@ names(preds4) <- c("Max_Monthly_Nitrate" ,
 ```{r}
 nereo.mod <- gam1
 summary(nereo.mod)
-
 # make list of years --
 year.list <- paste(2004:2021)
 length(year.list)
-
 # make template raster of year ----
 year.raster <- classify(d2, cbind(-Inf, 0.1, 2004), right=FALSE)
 plot(year.raster)
 names(year.raster) <- 'year'
-
 # make zone raster ---- 
-
 # outputs dir ----
 # * use an output directory of yours
 o2.dir <- here('spatial_data')
-
 preds.dir <- paste(o2.dir, "sp_predictions_900m_resolution", sep ='/')
 preds.dir
-
 # output for rasters scaled by rock 
 # * use an output directory of yours
 rock.preds.dir <- paste(o2.dir, "sp_predictions_rock_900m_resolution", sep ='/')
 rock.preds.dir
-
-
 for (i in 1:length(year.list)) {
   
   # 1. get urchins
@@ -650,7 +551,7 @@ for (i in 1:length(year.list)) {
   df4 <- as.data.frame(preds4, xy = T) %>%
     mutate_at(vars(year, zone, site_name), list(as.factor)) %>%
     mutate(zone = recode_factor(zone, '1' = 'INNER', '2' = 'OUTER')) %>%
-    # glimpse()
+    glimpse()
   
   # 5. predict
   year.pred.df <- predict.gam(nereo.mod, newdata = df4, type = 'response', se.fit = T)

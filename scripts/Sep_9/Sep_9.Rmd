@@ -294,7 +294,7 @@ predicts.all <-  testdata %>%
   data.frame(fits) %>%
   #group_by(survey_year) %>% #only change here
   #summarise(response=mean(fit), se.fit = mean(se.fit)) %>%
-  ungroup()
+  ungroup() 
 
 
 # Plot observed vs. predicted --
@@ -329,8 +329,16 @@ depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors
 
 # names(dat2)
 
-depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_300m_30m.tif", sep ='/'))
+# depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_300m_30m.tif", sep ='/'))
+# aggregate from 300x300 resolution to 900x900 (factor = 3)
+# depth2 <- aggregate(depth, fact = 3, fun = mean, na.rm = TRUE)
+# writeRaster(depth2, file.path(depth.dir, 'depth_mean_nc.all_wInterp_900m_30m.tif'), overwrite = TRUE)
+# disaggregate from 300x300 resolution to 150x150 (factor = 2)
+# depth3 <- disagg(depth, fact = 2)
+# writeRaster(depth3, file.path(depth.dir, 'depth_mean_nc.all_wInterp_150m_30m.tif'), overwrite = TRUE)
+depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_900m_30m.tif", sep ='/'))
 # plot(depth)
+
 
 n.extent <- ext(depth)
 
@@ -348,7 +356,14 @@ sub.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/r
 
 # dir(sub.dir)
 
-rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_300m_wInterp.tif", sep ='/'))
+# rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_300m_wInterp.tif", sep ='/'))
+# aggregate from 300x300 resolution to 900x900 (factor = 3)
+# rock2 <- aggregate(rock, fact = 3, fun = mean, na.rm = TRUE)
+# writeRaster(rock2, file.path(sub.dir, 'prob_rock_nc_MASKED_LatLong_all_900m_wInterp.tif'), overwrite = TRUE)
+# disaggregate from 300x300 resolution to 150x150 (factor = 2)
+# rock3 <- disagg(rock, fact = 2)
+# writeRaster(rock3, file.path(sub.dir, 'prob_rock_nc_MASKED_LatLong_all_150m_wInterp.tif'), overwrite = TRUE)
+rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_900m_wInterp.tif", sep ='/'))
 # rock 
 
 # # crop to NC --
@@ -510,7 +525,6 @@ names(preds2) <- c("Max_Monthly_Nitrate" ,
 
 ```{r}
 # sites ----
-
 rdf <- as.data.frame(year1998, xy = T)
 # head(rdf)
 rdf$site <- rdf$y
@@ -519,11 +533,11 @@ rdf <- rdf[,-3] # remove the column 'year'
 
 site.raster <- rast(rdf, type = 'xyz', crs = "EPSG:4326", extent = ext(year1998))
 # site.raster
-# 
+
 # plot(site.raster)
-# 
-# ext(year1998)
-# ext(site.raster)
+
+ext(year1998)
+ext(site.raster)
 
 site.raster2 <- extend(site.raster, year1998)
 
@@ -568,7 +582,7 @@ names(preds4) <- c("Max_Monthly_Nitrate" ,
 
 ## LOOP to predict each year using data frame
 
-```{r, eval=FALSE}
+```{r}
 nereo.mod <- gam1
 summary(nereo.mod)
 
@@ -656,7 +670,7 @@ for (i in 1:length(year.list)) {
   # 7. save raw raster
   # name.raster <- paste(year.no, "Log_Nereo_GIVE_IT_A_NAME.tif", sep = '_')
   name.raster <- paste(year.no, "Log_Nereo_NC.tif", sep = '_')
-  # writeRaster(year.prediction, paste(preds.dir, name.raster, sep = '/'))
+  writeRaster(year.prediction, paste(preds.dir, name.raster, sep = '/'))
   
   # 8. scale by rock
   rock4 <- resample(rock3, year.prediction)
@@ -665,6 +679,6 @@ for (i in 1:length(year.list)) {
   # 9. save rastr scaled by rock
   # name.raster.rock <- paste(year.no, "Log_Nereo_rock__GIVE_IT_A_NAME.tif", sep = '_')
   name.raster.rock <- paste(year.no, "Log_Nereo_rock_NC.tif", sep = '_')
-  # writeRaster(year.prediction2, paste(rock.preds.dir, name.raster.rock, sep = '/'))
+  writeRaster(year.prediction2, paste(rock.preds.dir, name.raster.rock, sep = '/'))
 }
 ```

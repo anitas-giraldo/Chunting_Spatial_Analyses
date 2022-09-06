@@ -601,12 +601,12 @@ names(year.raster) <- 'year'
 # * use an output directory of yours
 o2.dir <- here('spatial_data')
 
-preds.dir <- paste(o2.dir, "preds", sep ='/')
+preds.dir <- paste(o2.dir, "sp_predictions_900m_resolution", sep ='/')
 preds.dir
 
 # output for rasters scaled by rock 
 # * use an output directory of yours
-rock.preds.dir <- paste(o2.dir, "rock_preds", sep ='/')
+rock.preds.dir <- paste(o2.dir, "sp_predictions_rock_900m_resolution", sep ='/')
 rock.preds.dir
 
 

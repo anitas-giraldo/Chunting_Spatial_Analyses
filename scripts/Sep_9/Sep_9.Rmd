@@ -674,7 +674,7 @@ for (i in 1:length(year.list)) {
   
   # 8. scale by rock
   rock4 <- resample(rock3, year.prediction)
-  year.prediction2 <- rock4*year.prediction
+  year.prediction2 <- rock4 * year.prediction
   
   # 9. save rastr scaled by rock
   # name.raster.rock <- paste(year.no, "Log_Nereo_rock__GIVE_IT_A_NAME.tif", sep = '_')

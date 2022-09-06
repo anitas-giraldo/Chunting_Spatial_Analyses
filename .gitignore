@@ -3,5 +3,5 @@
 .RData
 .Ruserdata
 scripts/test_git_ignore.R
-spatial_data/preds/
-spatial_data/rock_preds/
+spatial_data/sp_predictions_300m_resolution/
+spatial_data/sp_predictions_rock_300m_resolution/

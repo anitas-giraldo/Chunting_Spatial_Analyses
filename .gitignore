@@ -5,3 +5,7 @@
 scripts/test_git_ignore.R
 spatial_data/sp_predictions_300m_resolution/
 spatial_data/sp_predictions_rock_300m_resolution/
+spatial_data/sp_predictions_900m_resolution/
+spatial_data/sp_predictions_rock_900m_resolution/
+data/NC_Landsat_kelp_area_1984_2021.csv/
+data/NC_kelp_density_predictions_900m_resolution.csv/

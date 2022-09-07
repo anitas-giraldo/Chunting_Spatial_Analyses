@@ -162,7 +162,7 @@ kelp_longer_900m <- kelp_data_900m %>%
     ) %>%
   mutate(resolution = as.factor(900))
 
-kelp_longer <- rbind()
+kelp_longer <- rbind(kelp_longer_300m, kelp_longer_900m)
   
 
 ```

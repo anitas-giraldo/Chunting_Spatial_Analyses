@@ -351,5 +351,21 @@ rock3 <- resample(rock2, d2)
 
 ```{r}
 ## get Env predictors
+re.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors'
+```
 
+### Nitrate
+
+```{r}
+## get nitrate predictors ----
+max_nit <- rast(paste(re.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep ='/'))
+
+# crop to NC
+max_nit2 <- crop(max_nit, n.extent)
+
+# resample predictors to bathy
+max_nit3 <- resample(max_nit2, d2)
+
+# mask predictors to bathy
+max_nit4 <- mask(max_nit3, d2)
 ```

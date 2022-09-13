@@ -328,7 +328,7 @@ depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors
 
 # names(dat2)
 
-# depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_300m_30m.tif", sep ='/'))
+depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_300m_30m.tif", sep ='/'))
 
 # aggregate from 300x300 resolution to 900x900 (factor = 3)
 # depth2 <- aggregate(depth, fact = 3, fun = mean, na.rm = TRUE)
@@ -336,14 +336,14 @@ depth.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors
 # depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_900m_30m.tif", sep ='/'))
 
 # disaggregate from 300x300 resolution to 150x150 (factor = 2)
-# depth3 <- disagg(depth, fact = 2)
+depth3 <- disagg(depth, fact = 2)
 # writeRaster(depth3, file.path(depth.dir, 'depth_mean_nc.all_wInterp_150m_30m.tif'), overwrite = TRUE)
-# depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_150m_30m.tif", sep ='/'))
+depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_150m_30m.tif", sep ='/'))
 
 # aggregate from 300x300 resolution to 600x600 (factor = 2)
 # depth4 <- aggregate(depth, fact = 2, fun = mean, na.rm = TRUE)
 # writeRaster(depth4, file.path(depth.dir, 'depth_mean_nc.all_wInterp_600m_30m.tif'), overwrite = TRUE)
-depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_600m_30m.tif", sep ='/'))
+# depth <- rast(paste(depth.dir, "depth_mean_nc.all_wInterp_600m_30m.tif", sep ='/'))
 
 # plot(depth)
 
@@ -361,6 +361,10 @@ n.extent <- ext(d2)
 ## Get rock ----
 sub.dir <- "/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/rock"
 
+# sub1.dir <- "/Volumes/Chunting HD/SURE_Data/CA_agg_prob_rock_30m_wInterp"
+# 
+# rock1 <- rast(paste(sub1.dir, "prob_rock_nc.all_30m_wInterp.tif", sep ='/'))
+
 # dir(sub.dir)
 
 rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_300m_wInterp.tif", sep ='/'))
@@ -371,14 +375,14 @@ rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_300m_wInterp.tif", 
 # rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_900m_wInterp.tif", sep ='/'))
 
 # disaggregate from 300x300 resolution to 150x150 (factor = 2)
-# rock3 <- disagg(rock, fact = 2)
-# writeRaster(rock3, file.path(sub.dir, 'prob_rock_nc_MASKED_LatLong_all_150m_wInterp.tif'), overwrite = TRUE)
-# rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_150m_wInterp.tif", sep ='/'))
+rock3 <- disagg(rock, fact = 2)
+writeRaster(rock3, file.path(sub.dir, 'prob_rock_nc_MASKED_LatLong_all_150m_wInterp.tif'), overwrite = TRUE)
+rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_150m_wInterp.tif", sep ='/'))
 
 # aggregate from 300x300 resolution to 600x600 (factor = 2)
 # rock4 <- aggregate(rock, fact = 2, fun = mean, na.rm = TRUE)
 # writeRaster(rock4, file.path(sub.dir, 'prob_rock_nc_MASKED_LatLong_all_600m_wInterp.tif'), overwrite = TRUE)
-rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_600m_wInterp.tif", sep ='/'))
+# rock <- rast(paste(sub.dir, "prob_rock_nc_MASKED_LatLong_all_600m_wInterp.tif", sep ='/'))
 
 # # crop to NC --
 rock2 <- crop(rock, ext(d2))

@@ -211,3 +211,145 @@ gam1 <- gam(formula = log_den_NERLUE ~
 
 ## 5. Check GAM
 
+```{r}
+gam1$aic # model selection?
+gam1$deviance # goodness of fit
+summary(gam1)
+gam.check(gam1) # model diagnostic plots
+
+# The effective degrees of freedom (EDF) reflects the degree of non-linearity 
+# of a curve. As the edf increasingly exceeds 2, the degree of non-linearity
+# progressively increases.
+
+# Residual plotting aims to show that there is something wrong with the model 
+# assumptions.
+# The key assumptions are
+# 1. The assumed mean variance relationship is correct, so that scaled residuals 
+# have constant variance.
+# 2. The response data are independent, so that the residuals appear approximately 
+# so.
+
+# visualize responses
+par(mfrow = c(3, 3), mar = c(2, 4, 3, 1))
+visreg(gam1)
+dev.off()
+```
+
+## 6. Predict to compare to observed
+
+```{r}
+testdata <- dat2 %>%
+  dplyr::select(
+    'log_den_STRPURAD', 'log_mean_vrm', 'log_UBR_Max',
+    'Max_Monthly_Nitrate', 'wh_max', 'log_den_NERLUE',
+    'site_name', 'zone', 'year'
+  )
+
+# fit the data
+fits <- predict.gam(gam1, newdata = testdata, type = 'response', se.fit = T)
+
+# predict average kelp per year ----
+predicts.year <- testdata %>%
+  data.frame(fits) %>%
+  group_by(year) %>% 
+  summarise(response = mean(fit, na.rm = T), se.fit = mean(se.fit, na.rm = T)) %>%
+  ungroup()
+
+ggmod.year <- predicts.year %>%
+  ggplot(aes(x = year, y = response, fill = year)) +
+  xlab('survey_year') + 
+  ylab('') + 
+  scale_fill_viridis(discrete = T) + 
+  geom_bar(stat = 'identity') + 
+  geom_errorbar(
+    aes(ymin = response - se.fit, ymax = response + se.fit), width = 0.5
+  ) + 
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, h = 1))
+
+ggmod.year
+```
+
+## 7. Plot observed vs. predicted
+
+```{r}
+predicts.all <- testdata %>%
+  data.frame(fits) %>%
+  ungroup()
+
+# plot observed vs. predicted ---- 
+library(ggpmisc)
+
+my.formula <- y ~ x
+
+p <- predicts.all %>%
+  ggplot(aes(x = fit, y = log_den_NERLUE)) + 
+  geom_smooth(method = 'lm', se = FALSE, color = 'black', formula = my.formula) + 
+  stat_poly_eq(
+    formula = my.formula,
+    aes(label = paste(..eq.label.., ..rr.label.., sep = '~~~')),
+    parse = TRUE
+  ) + 
+  geom_point() + 
+  labs(x = 'Predicted', y = 'Observed', title = 'N. luetkeana') + 
+  theme_bw()
+
+p
+```
+
+## Predict best model across all years and site that I have data for
+
+### Depth
+
+```{r}
+## get depth ----
+depth.dir <- '/Volumes/Chunting HD/SURE_Data/CA_agg_bathy_30m_wInterp'
+
+depth.30 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_30m.tif'))
+depth.150 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_150m_30m.tif'))
+depth.300 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_300m_30m.tif'))
+depth.600 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_600m_30m.tif'))
+depth.900 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_900m_30m.tif'))
+
+n.extent <- ext(depth.300)
+
+# depth.300 # EPSG:26910
+
+crs1 <- 'epsg:4326'
+d2 <- terra::project(depth.300, crs1) 
+
+n.extent <- ext(d2)
+```
+
+### Rock
+
+```{r}
+## get rock ----
+rock.dir <- '/Volumes/Chunting HD/SURE_Data/CA_agg_prob_rock_30m_wInterp'
+
+rock.30 <- rast(paste0(rock.dir, '/prob_rock_nc.all_30m_wInterp.tif'))
+
+sub.dir <- paste0(rock.dir, '/rock_NC_diff_res_30m')
+
+rock.150 <- rast(paste0(sub.dir, '/rock_NC_150res_30m.tif'))
+rock.300 <- rast(paste0(sub.dir, '/rock_NC_300res_30m.tif'))
+rock.600 <- rast(paste0(sub.dir, '/rock_NC_600res_30m.tif'))
+rock.900 <- rast(paste0(sub.dir, '/rock_NC_900res_30m.tif'))
+
+rock1 <- terra::project(rock.300, crs1) 
+
+# crop to NC 
+rock2 <- crop(rock1, ext(d2))
+
+rock3 <- resample(rock2, d2)
+
+# Resample transfers values between non matching Raster objects (in terms of origin)
+# and resolution).
+```
+
+### Env predictors
+
+```{r}
+## get Env predictors
+
+```

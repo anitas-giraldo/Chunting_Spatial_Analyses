@@ -1,0 +1,251 @@
+---
+title: "SURE Project"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      cache = T,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      fig.width = 8,
+                      fig.height = 10,
+                      fig.align = 'center')
+library(sp)
+library(sf)
+library(terra)
+library(raster)
+library(rgdal)
+library(pander)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(RColorBrewer)
+library(here)
+library(plotrix)
+```
+
+## Objective 
+
+Compare spatial predictions of kelp to "in situ" survey data. Compare each year and location for 150, 300, 600, 900 resolutions.
+
+## Extraction
+
+Extract the predicted $log$ kelps density of every year (2004 - 2021) for each site in the North Coast.
+
+```{r}
+# set a directory
+w.dir <- here()
+d.dir <- here('data')
+r1.dir <- here('spatial_data/sp_predictions_300m')
+r2.dir <- here('spatial_data/sp_predictions_150m')
+# r3.dir <- here('spatial_data/sp_predictions_150m_resolution')
+# r4.dir <- here('spatial_data/sp_predictions_600m_resolution')
+
+# read and transform the observed data to the log scale
+df <- read.csv(paste(d.dir, 
+                     'RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp.csv', 
+                     sep = '/')) %>%
+  dplyr::select(site_name, year, transect, zone, latitude, longitude, den_NERLUE) %>%
+  mutate_at(vars(year, transect, zone, site_name), list(as.factor)) %>%
+  mutate(log_den_NERLUE = log(den_NERLUE)) 
+head(df) 
+```
+
+Note that $\log(0)$ returns -Inf. How to deal with $\log(0)$?
+
+```{r}
+df$log_den_NERLUE <- replace(df$log_den_NERLUE, df$log_den_NERLUE == -Inf, 0)
+```
+
+Calculate the mean and standard error of kelps density of every year for each site by zone (INNER/OUTER).
+
+```{r}
+obs <- df %>% 
+  group_by(site_name, year, zone) %>%
+  summarise_at(vars(log_den_NERLUE), list(mean = mean, se = std.error), na.rm = TRUE) %>%
+  pivot_wider(names_from = zone, values_from = c(mean, se))
+head(obs)
+```
+
+Extract the predicted $log$ kelps density of every year for each site at different resolutions.
+
+```{r}
+# kelp density predictions at 300m resolution
+
+# read the .csv file
+site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/')) 
+# convert from .csv to .shp
+site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+
+# declaring an empty data frame 
+pred <- data.frame(site_name = character(),
+                   year = numeric(),
+                   fit = numeric())
+
+for (i in c(2006:2021)) {
+  rast <- rast(paste0(r1.dir, paste0('/', i, '_Log_Nereo_NC.tif')))
+  ext <- terra::extract(rast, vect(site_shp$geometry)) %>%
+    mutate(site_name = site$site_name, year = as.factor(i), .before = fit) %>%
+    dplyr::select(-ID) 
+  pred <- rbind(pred, ext)
+}
+
+head(pred)
+
+# write to cvs
+merge_df <- left_join(pred,
+                      site %>% dplyr::select(c(site_name, longitude, latitude)),
+                      by = 'site_name')
+
+# write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_300m.csv'), row.names = FALSE)
+```
+
+```{r}
+# kelp density predictions at 150m resolution
+
+# read the .csv file
+site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/')) 
+# convert from .csv to .shp
+site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+
+# declaring an empty data frame 
+pred <- data.frame(site_name = character(),
+                   year = numeric(),
+                   fit = numeric())
+
+for (i in c(2006:2021)) {
+  rast <- rast(paste0(r2.dir, paste0('/', i, '_Log_Nereo_NC.tif')))
+  ext <- terra::extract(rast, vect(site_shp$geometry)) %>%
+    mutate(site_name = site$site_name, year = as.factor(i), .before = fit) %>%
+    dplyr::select(-ID) 
+  pred <- rbind(pred, ext)
+}
+
+head(pred)
+
+# write to cvs
+merge_df <- left_join(pred,
+                      site %>% dplyr::select(c(site_name, longitude, latitude)),
+                      by = 'site_name')
+
+write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_150m.csv'), row.names = FALSE)
+```
+
+## Comparison
+
+```{r}
+# kelp density predictions at 300m resolution
+pred_300m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_300m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+head(pred_300m)
+```
+
+```{r}
+kelp_data_300m <- left_join(pred_300m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_300m)
+```
+
+```{r}
+# kelp density predictions at 150m resolution
+pred_150m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_150m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+head(pred_150m)
+```
+
+```{r}
+kelp_data_150m <- left_join(pred_150m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_150m)
+```
+
+## Plotting
+
+Plot log of kelps density vs year for each site at different resolutions.
+
+```{r}
+sites <- unique(kelp_data_300m$site_name) 
+
+kelp_longer_300m <- kelp_data_300m %>% 
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(300))
+
+kelp_longer_150m <- kelp_data_150m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(150))
+
+# kelp_longer_900m <- kelp_data_900m %>% 
+#   dplyr::select(-c(longitude, latitude)) %>%
+#   pivot_longer(
+#     -c('site_name', 'year', 'fit'),
+#     names_to = c('.value', 'zone'),
+#     names_sep = '_'
+#     ) %>%
+#   mutate(resolution = as.factor(900))
+
+# 
+# kelp_longer_600m <- kelp_data_600m %>% 
+#   dplyr::select(-c(longitude, latitude)) %>%
+#   pivot_longer(
+#     -c('site_name', 'year', 'fit'),
+#     names_to = c('.value', 'zone'),
+#     names_sep = '_'
+#     ) %>%
+#   mutate(resolution = as.factor(600))
+
+# kelp_longer <- rbind(kelp_longer_150m, kelp_longer_300m, 
+#                      kelp_longer_600m, kelp_longer_900m)
+  
+kelp_longer <- rbind(kelp_longer_150m, kelp_longer_300m)
+
+for (i in sites) {
+  plot <- kelp_longer %>% 
+    filter(site_name == i) %>%
+    ggplot() + 
+    geom_pointrange(aes(
+      x = year, y = mean, group = zone, color = zone, 
+      ymin = mean - se, ymax = mean + se
+      ), alpha = 0.5, size = 0.3) + 
+    geom_bar(aes(x = year, y = fit, 
+                 fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')), 
+             stat = 'identity', position = 'dodge', alpha = 0.2) +
+    facet_wrap(. ~ resolution, nrow = 2) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, size = 8), 
+          plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank(),
+          legend.title = element_text(size = 9),
+          legend.text = element_text(size = 7)) + 
+    labs(y = 'log of kelp density', title = i, fill = 'fit >= 6.6')
+  print(plot)
+}
+```
+
+
+
+
+
+
+
+

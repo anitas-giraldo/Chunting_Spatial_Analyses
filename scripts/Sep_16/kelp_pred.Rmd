@@ -491,4 +491,133 @@ ext(year1998)
 ext(site.raster)
 
 site.raster2 <- extend(site.raster, year1998)
+
+preds3 <- c(preds2, site.raster2)
+names(preds3) <- c(
+  'Max_Monthly_Nitrate',
+  'wh_max',
+  'log_UBR_Max',
+  'year',
+  'site_name'
+)
+```
+
+### Zone
+
+```{r}
+zone.raster <- d2
+names(zone.raster) <- 'zone'
+
+rec.m <- c(
+  -Inf, -10, 2,
+  -10, 0.1, 1
+)
+
+rclmat <- matrix(rec.m, ncol = 3, byrow = TRUE)
+
+zone.raster2 <- classify(zone.raster, rclmat, right = FALSE)
+
+preds4 <- c(preds3, zone.raster2)
+names(preds4) <- c(
+  'Max_Monthly_Nitrate',
+  'wh_max',
+  'log_UBR_Max',
+  'year',
+  'site_name',
+  'zone'
+)
+```
+
+## LOOP to predict each year using data frame
+
+```{r}
+nereo.mod <- gam1
+summary(nereo.mod)
+
+# make list of years 
+year.list <- paste(2004:2021)
+length(year.list)
+
+# make template raster of year 
+year.raster <- classify(d2, cbind(-Inf, 0.1, 2004), right = FALSE)
+names(year.raster) <- 'year'
+
+# outputs dir
+o2.dir <- here('spatial_data')
+
+preds.dir <- paste(o2.dir, 'sp_predictions_300m', sep ='/')
+preds.dir
+
+# output for rasters scaled by rock 
+rock.preds.dir <- paste(o2.dir, "sp_predictions_300m_rock", sep ='/')
+rock.preds.dir
+
+
+for (i in 1:length(year.list)) {
+  
+  # 1. get urchins
+  urchin.rast <- rast(paste(urch.dir, u.files[i], sep ='/'))
+  urchin.rast2 <- resample(urchin.rast, d2)
+  
+  # 2. stack with predictors for that year
+  # env.raster <- c(d2, max_nit4[[i+6]], whmax.stack4[[i]], wymean.stack4[[i]])
+  
+  # env.raster <- c(d2, mean_up_T4[[i+6]], max_nit4[[i+6]], whmax.stack4[[i]], wymean.stack4[[i]])
+  
+  # V3
+  env.raster <- c(max_nit4[[i+6]], whmax.stack4[[i]], ubr5[[i]])
+  
+  preds1 <- c(urchin.rast2, env.raster)
+  
+  # 3. get year and stack it
+  year.no <- as.numeric(year.list[i])
+  year.r <- classify(year.raster, cbind(-Inf, 0, year.no), right = FALSE)
+  
+  preds2 <- c(preds1, year.r)
+  
+  # 3. stack zone
+  preds3 <- c(preds2, zone.raster2)
+  
+  # 4. stack site
+  preds4 <- c(preds3, site.raster2)
+  
+  # name predictors 
+  names(preds4) <- c(
+    'log_den_STRPURAD',
+    'Max_Monthly_Nitrate', 
+    'wh_max', 
+    'log_UBR_Max',                         
+    'year', 
+    'zone',
+    'site_name'
+  )
+  
+  df4 <- as.data.frame(preds4, xy = T) %>%
+    mutate_at(vars(year, zone, site_name), list(as.factor)) %>%
+    mutate(zone = recode_factor(zone, '1' = 'INNER', '2' = 'OUTER'))
+  
+  # 5. predict
+  year.pred.df <- predict.gam(nereo.mod, newdata = df4, type = 'response', se.fit = T)
+  
+  # join with df for lats and lons
+  preds.all <-  df4 %>% 
+    data.frame(year.pred.df) %>%
+    dplyr::select(x, y, fit) 
+  
+  # 6. Rasterize
+  crs.p <- "epsg:4326"
+  year.prediction <- rast(preds.all, type = 'xyz', crs = crs.p, digits = 6)
+  
+  # 7. save raw raster
+  name.raster <- paste(year.no, "Log_Nereo_NC.tif", sep = '_')
+  writeRaster(year.prediction, paste(preds.dir, name.raster, sep = '/'))
+  
+  # 8. scale by rock
+  rock4 <- resample(rock3, year.prediction)
+  year.prediction2 <- rock4 * year.prediction
+  
+  # 9. save rastr scaled by rock
+  name.raster.rock <- paste(year.no, "Log_Nereo_rock_NC.tif", sep = '_')
+  writeRaster(year.prediction2, paste(rock.preds.dir, name.raster.rock, sep = '/'))
+}
 ```

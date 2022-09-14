@@ -363,9 +363,132 @@ max_nit <- rast(paste(re.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep ='/'))
 # crop to NC
 max_nit2 <- crop(max_nit, n.extent)
 
+# disaggregate to 300m resolution
+max_nit5 <- disagg(max_nit2, fact = 18)
+
 # resample predictors to bathy
-max_nit3 <- resample(max_nit2, d2)
+max_nit3 <- resample(max_nit5, d2)
 
 # mask predictors to bathy
 max_nit4 <- mask(max_nit3, d2)
+```
+
+### Wave
+
+```{r}
+## get Wave predictors ----
+w.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors'
+
+# load raster data
+wave.dir <- paste(w.dir, 'waves', 'wh_max', sep = '/')
+
+# list files in source
+n.files <- dir(wave.dir)
+n.files <- list.files(wave.dir, pattern = '.tif$', full.name = TRUE)
+
+# list names to load onto the Environment
+names.list <- list.files(wave.dir, pattern = '.tif$')
+names.list <- str_replace(names.list, '.tif$', '')
+
+# load csv files as a list
+tfiles <- lapply(n.files, rast) # this is a list
+
+# stack them
+whmax.stack <- c()
+
+# use do.call to create a raster otherwise it creates a list
+whmax.stack <- do.call('c', tfiles)
+
+# crop to NC
+whmax.stack2 <- crop(whmax.stack, n.extent)
+
+# disaggregate to 300m resolution
+whmax.stack5 <- disagg(whmax.stack2, fact = 3)
+
+# resample predictors to bathy
+whmax.stack3 <- resample(whmax.stack5, d2)
+
+# mask predictors to bathy
+whmax.stack4 <- mask(whmax.stack3, d2)
+```
+
+### Mean UBR MAX
+
+```{r}
+## get mean UBR max ----
+w2.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/orbital_vel'
+
+# load raster data
+ubr <- rast(paste(w2.dir, 'UBR_Max_30m_NC.tif', sep = '/')) 
+
+ubr <- terra::project(ubr, rock3)
+
+ubr1 <- classify(ubr, cbind(0, NA))
+
+# crop to NC
+ubr2 <- crop(ubr1, n.extent)
+
+# resample predictors to bathy
+ubr3 <- resample(ubr2, d2)
+
+# mask predictors to bathy
+ubr4 <- mask(ubr3, d2)
+
+ubr5 <- log(ubr4)
+```
+
+### Urchins
+
+```{r}
+## get urchins ----
+# load purple urchin predictors
+urch.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/urchins/log_sp_predictions'
+
+# load raster data
+u.files <- dir(urch.dir)
+u.files <- list.files(urch.dir, pattern = '.tif')
+```
+
+```{r}
+# stack rasters
+preds1 <- c(max_nit4[[1]], whmax.stack4[[1]], ubr5[[1]])
+```
+
+### Year
+
+```{r}
+# get year raster
+
+# assign the raster values in the range 0-Inf are reclassifed to take values 1998
+year1998 <- classify(max_nit4[[1]], cbind(0, Inf, 1998), right = FALSE)
+names(year1998) <- 'year'
+
+year.list <- paste(1998:2021)
+length(year.list)
+
+preds2 <- c(preds1, year1998)
+
+names(preds2) <- c(
+  'Max_Monthly_Nitrate',
+  'wh_max',
+  'log_UBR_Max',
+  'year'
+)
+```
+
+### Sites
+
+```{r}
+# get sites ----
+rdf <- as.data.frame(year1998, xy = T)
+rdf$site <- rdf$y
+rdf <- rdf[ , -3]
+
+site.raster <- rast(rdf, type = 'xyz', crs = 'EPSG:4326', extent = ext(year1998))
+site.raster
+
+ext(year1998)
+ext(site.raster)
+
+site.raster2 <- extend(site.raster, year1998)
 ```

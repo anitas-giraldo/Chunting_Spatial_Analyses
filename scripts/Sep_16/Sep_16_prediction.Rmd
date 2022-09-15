@@ -365,10 +365,8 @@ max_nit <- rast(paste(re.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep ='/'))
 # crop to NC
 max_nit2 <- crop(max_nit, n.extent)
 
-# # disaggregate 
-# max_nit5 <- disagg(max_nit2, fact = 36)
-
-# aggregate
+# disaggregate
+max_nit5 <- disagg(max_nit2, fact = 6)
 
 # resample predictors to bathy
 max_nit3 <- resample(max_nit5, d2)
@@ -407,7 +405,8 @@ whmax.stack <- do.call('c', tfiles)
 whmax.stack2 <- crop(whmax.stack, n.extent)
 
 # disaggregate 
-whmax.stack5 <- disagg(whmax.stack2, fact = 7)
+# whmax.stack5 <- disagg(whmax.stack2, fact = 1)
+whmax.stack5 <- whmax.stack2
 
 # resample predictors to bathy
 whmax.stack3 <- resample(whmax.stack5, d2)
@@ -549,11 +548,11 @@ names(year.raster) <- 'year'
 # outputs dir
 o2.dir <- here('spatial_data')
 
-preds.dir <- paste(o2.dir, 'sp_predictions_150m', sep ='/')
+preds.dir <- paste(o2.dir, 'sp_predictions_900m', sep ='/')
 preds.dir
 
 # output for rasters scaled by rock 
-rock.preds.dir <- paste(o2.dir, "sp_predictions_150m_rock", sep ='/')
+rock.preds.dir <- paste(o2.dir, "sp_predictions_900m_rock", sep ='/')
 rock.preds.dir
 
 

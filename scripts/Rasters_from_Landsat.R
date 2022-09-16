@@ -56,7 +56,7 @@ df2 <- df %>%
   mutate_at(vars(year, quarter, latlon), list(as.factor)) %>%
   glimpse()
 
-# 1. Calculate annual summaries----
+# 1. Calculate annual summaries---- adapt > make sure you only use summer (Q3)
 
 df3 <- df2 %>%
   # get the average kelp for each year 
@@ -80,7 +80,7 @@ blank <- raster(paste(r.dir, "NC_blank.tif", sep ='/'))
 extent(blank)
 
 # choose cell size fot aggregate factor --
-agg.fact <- 200/30 # for cell size ~ 200m
+agg.fact <- 300/30 # for cell size ~ 200m
 res <- "200m"
 #agg.fact <- 500/30 # for cell size ~ 500m
 

@@ -601,7 +601,7 @@ for (i in 1:length(year.list)) {
   
   # preds1 <- c(urchin.rast2, env.raster)
   
-  preds1 <- c(max_nit4[[i+6]], whmax.stack4[[i]], ubr5[[i]], urch.stack5[[i]])
+  preds1 <- c(max_nit4[[i+6]], whmax.stack4[[i]], ubr5[[i]], urchin.stack4[[i]])
   
   # 3. get year and stack it
   year.no <- as.numeric(year.list[i])

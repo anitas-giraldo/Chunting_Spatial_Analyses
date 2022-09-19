@@ -313,7 +313,7 @@ depth.300 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_300m_30m.tif'))
 depth.600 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_600m_30m.tif'))
 depth.900 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_900m_30m.tif'))
 
-depth <- depth.300
+depth <- depth.900
 
 n.extent <- ext(depth)
 
@@ -340,7 +340,7 @@ rock.300 <- rast(paste0(sub.dir, '/rock_NC_300res_30m.tif'))
 rock.600 <- rast(paste0(sub.dir, '/rock_NC_600res_30m.tif'))
 rock.900 <- rast(paste0(sub.dir, '/rock_NC_900res_30m.tif'))
 
-rock <- rock.300
+rock <- rock.900
 
 rock1 <- terra::project(rock, crs1) 
 
@@ -370,7 +370,7 @@ max_nit <- rast(paste(re.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep ='/'))
 max_nit2 <- crop(max_nit, n.extent)
 
 # disaggregate
-max_nit5 <- disagg(max_nit2, fact = 18)
+max_nit5 <- disagg(max_nit2, fact = 6)
 
 # resample predictors to bathy
 max_nit3 <- resample(max_nit5, d2)
@@ -409,8 +409,8 @@ whmax.stack <- do.call('c', tfiles)
 whmax.stack2 <- crop(whmax.stack, n.extent)
 
 # disaggregate 
-whmax.stack5 <- disagg(whmax.stack2, fact = 4)
-# whmax.stack5 <- whmax.stack2
+# whmax.stack5 <- disagg(whmax.stack2, fact = 2)
+whmax.stack5 <- whmax.stack2
 
 # resample predictors to bathy
 whmax.stack3 <- resample(whmax.stack5, d2)
@@ -471,8 +471,8 @@ urchin.stack <- do.call('c', tfiles)
 # crop to NC
 urchin.stack2 <- crop(urchin.stack, n.extent)
 
-# disaggregate
-urchin.stack5 <- urchin.stack2
+# disaggregate/aggregate
+urchin.stack5 <- aggregate(urchin.stack2, fact = 3, fun = mean, na.rm = TRUE)
 
 # resample predictors to bathy
 urchin.stack3 <- resample(urchin.stack5, d2)

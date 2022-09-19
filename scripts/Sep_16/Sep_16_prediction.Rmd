@@ -308,10 +308,13 @@ p
 depth.dir <- '/Volumes/Chunting HD/SURE_Data/CA_agg_bathy_30m_wInterp'
 
 depth.30 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_30m.tif'))
+depth.90 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_90m_30m.tif'))
+depth.120 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_120m_30m.tif'))
 depth.150 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_150m_30m.tif'))
 depth.300 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_300m_30m.tif'))
 depth.600 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_600m_30m.tif'))
 depth.900 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_900m_30m.tif'))
+depth.1500 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_1500m_30m.tif'))
 
 depth <- depth.150
 
@@ -334,11 +337,13 @@ rock.dir <- '/Volumes/Chunting HD/SURE_Data/CA_agg_prob_rock_30m_wInterp'
 rock.30 <- rast(paste0(rock.dir, '/prob_rock_nc.all_30m_wInterp.tif'))
 
 sub.dir <- paste0(rock.dir, '/rock_NC_diff_res_30m')
-
+rock.90 <- rast(paste0(sub.dir, '/rock_NC_90res_30m.tif'))
+rock.120 <- rast(paste0(sub.dir, '/rock_NC_120res_30m.tif'))
 rock.150 <- rast(paste0(sub.dir, '/rock_NC_150res_30m.tif'))
 rock.300 <- rast(paste0(sub.dir, '/rock_NC_300res_30m.tif'))
 rock.600 <- rast(paste0(sub.dir, '/rock_NC_600res_30m.tif'))
 rock.900 <- rast(paste0(sub.dir, '/rock_NC_900res_30m.tif'))
+rock.1500 <- rast(paste0(sub.dir, '/rock_NC_1500res_30m.tif'))
 
 rock <- rock.150
 

@@ -1,0 +1,42 @@
+---
+title: "SURE Project"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      cache = T,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      fig.width = 8,
+                      fig.height = 10,
+                      fig.align = 'center')
+library(sp)
+library(sf)
+library(terra)
+library(raster)
+library(rgdal)
+library(pander)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(RColorBrewer)
+library(here)
+library(plotrix)
+```
+
+
+
+
+
+
+
+
+
+

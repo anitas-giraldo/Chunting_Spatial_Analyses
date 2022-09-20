@@ -46,7 +46,7 @@ s.dir <- here('G:/Shared drives/California Kelp Restoration Project - Seagrant/S
 
 # load csv ----
 
-df <- read.csv(paste(d.dir, "NC_Landsat_kelp_biomass_1984-2021.csv", sep ='/')) %>%
+df <- read.csv(paste(d.dir, "NC_Landsat_kelp_area_1984-2021.csv", sep ='/')) %>%
   glimpse()
 
 

@@ -316,7 +316,7 @@ depth.600 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_600m_30m.tif'))
 depth.900 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_900m_30m.tif'))
 depth.1500 <- rast(paste0(depth.dir, '/depth_mean_nc.all_wInterp_1500m_30m.tif'))
 
-depth <- depth.150
+depth <- depth.900
 
 n.extent <- ext(depth)
 
@@ -345,7 +345,7 @@ rock.600 <- rast(paste0(sub.dir, '/rock_NC_600res_30m.tif'))
 rock.900 <- rast(paste0(sub.dir, '/rock_NC_900res_30m.tif'))
 rock.1500 <- rast(paste0(sub.dir, '/rock_NC_1500res_30m.tif'))
 
-rock <- rock.150
+rock <- rock.900
 
 rock1 <- terra::project(rock, crs1) 
 
@@ -377,7 +377,7 @@ max_nit2 <- crop(max_nit, n.extent)
 # disaggregate
 # max_nit5 <- disagg(max_nit2, fact = 18) # 300m
 # max_nit5 <- disagg(max_nit2, fact = 9) # 600m
-# max_nit5 <- disagg(max_nit2, fact = 6) # 900m
+max_nit5 <- disagg(max_nit2, fact = 6) # 900m
 # max_nit5 <- disagg(max_nit2, fact = 36) # 150m
 
 # resample predictors to bathy
@@ -419,7 +419,7 @@ whmax.stack2 <- crop(whmax.stack, n.extent)
 # disaggregate 
 # whmax.stack5 <- disagg(whmax.stack2, fact = 4) # 300m
 # whmax.stack5 <- disagg(whmax.stack2, fact = 2) # 600m
-# whmax.stack5 <- whmax.stack2 # 900m
+whmax.stack5 <- whmax.stack2 # 900m
 # whmax.stack5 <- disagg(whmax.stack2, fact = 7) # 150m
 
 # resample predictors to bathy
@@ -463,34 +463,7 @@ urch.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors/
 
 # load raster data
 u.files <- dir(urch.dir)
-u.files <- list.files(urch.dir, pattern = '.tif', full.names = TRUE)
-
-# list names to load onto the Environment
-names.list <- list.files(urch.dir, pattern = '.tif$')
-names.list <- str_replace(names.list, '.tif$', '')
-
-# load csv files as a list
-tfiles <- lapply(u.files, rast)
-
-# stack them
-urchin.stack <- c()
-
-# use do.call to create a raster otherwise it creates a list
-urchin.stack <- do.call('c', tfiles)
-
-# crop to NC
-urchin.stack2 <- crop(urchin.stack, n.extent)
-
-# disaggregate/aggregate
-# urchin.stack5 <- aggregate(urchin.stack2, fact = 3, fun = mean, na.rm = TRUE) # 600m
-# urchin.stack5 <- aggregate(urchin.stack2, fact = 3, fun = mean, na.rm = TRUE) # 900m
-# urchin.stack5 <- disagg(urchin.stack2, fact = 2) # 150m
-
-# resample predictors to bathy
-urchin.stack3 <- resample(urchin.stack5, d2)
-
-# mask predictors to bathy
-urchin.stack4 <- mask(urchin.stack3, d2)
+u.files <- list.files(urch.dir, pattern = '.tif')
 ```
 
 ```{r}
@@ -589,19 +562,19 @@ names(year.raster) <- 'year'
 # outputs dir
 o2.dir <- here('spatial_data')
 
-preds.dir <- paste(o2.dir, 'sp_predictions_150m', sep ='/')
+preds.dir <- paste(o2.dir, 'sp_predictions_900m', sep ='/')
 preds.dir
 
 # output for rasters scaled by rock 
-rock.preds.dir <- paste(o2.dir, "sp_predictions_150m_rock", sep ='/')
+rock.preds.dir <- paste(o2.dir, "sp_predictions_900m_rock", sep ='/')
 rock.preds.dir
 
 
 for (i in 1:length(year.list)) {
   
   # 1. get urchins
-  # urchin.rast <- rast(paste(urch.dir, u.files[i], sep ='/'))
-  # urchin.rast2 <- resample(urchin.rast, d2)
+  urchin.rast <- rast(paste(urch.dir, u.files[i], sep ='/'))
+  urchin.rast2 <- resample(urchin.rast, d2)
   
   # 2. stack with predictors for that year
   # env.raster <- c(d2, max_nit4[[i+6]], whmax.stack4[[i]], wymean.stack4[[i]])
@@ -609,11 +582,9 @@ for (i in 1:length(year.list)) {
   # env.raster <- c(d2, mean_up_T4[[i+6]], max_nit4[[i+6]], whmax.stack4[[i]], wymean.stack4[[i]])
   
   # V3
-  # env.raster <- c(max_nit4[[i+6]], whmax.stack4[[i]], ubr5[[i]])
+  env.raster <- c(max_nit4[[i+6]], whmax.stack4[[i]], ubr5[[i]])
   
-  # preds1 <- c(urchin.rast2, env.raster)
-  
-  preds1 <- c(max_nit4[[i+6]], whmax.stack4[[i]], ubr5[[i]], urchin.stack4[[i]])
+  preds1 <- c(urchin.rast2, env.raster)
   
   # 3. get year and stack it
   year.no <- as.numeric(year.list[i])

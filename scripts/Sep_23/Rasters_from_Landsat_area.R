@@ -4,7 +4,8 @@
 # last modified by Anita Giraldo 5 april 2022
 
 
-# This script makes rasters of mean kelp biomass for each year of Landsat data from a .csv file
+# This script makes rasters of mean kelp biomass for each year of Landsat data 
+# from a .csv file
 
 
 # libraries ----
@@ -40,13 +41,11 @@ rm(list = ls())
 # Directories ----
 w.dir <- here()
 d.dir <- here('data')
-o.dir <- here('outputs')
-r.dir <- here('rasters')
-s.dir <- here('G:/Shared drives/California Kelp Restoration Project - Seagrant/Spatial_data/shapefiles')
+r.dir <- here('spatial_data/rasters')
 
 # load csv ----
 
-df <- read.csv(paste(d.dir, "NC_Landsat_kelp_area_1984-2021.csv", sep ='/')) %>%
+df <- read.csv(paste(d.dir, "NC_Landsat_kelp_area_1984_2021.csv", sep ='/')) %>%
   glimpse()
 
 
@@ -59,36 +58,38 @@ df2 <- df %>%
 # 1. Calculate annual summaries---- adapt > make sure you only use summer (Q3)
 
 df3 <- df2 %>%
+  # get only summer (Q3)
+  filter(quarter == 3) %>%
   # get the average kelp for each year 
   group_by(year, latlon) %>%
-  summarise(mean_biomass = mean(biomass, na.rm = TRUE),
-            max_biomass = max(biomass, na.rm = TRUE),
-            sd_biomass = sd(biomass, na.rm = TRUE)) %>% 
+  summarise(mean_area = mean(area, na.rm = TRUE),
+            max_area = max(area, na.rm = TRUE),
+            sd_area = sd(area, na.rm = TRUE)) %>% 
   ungroup() %>%
   mutate(latitude = sub("_.*", "", latlon)) %>% # Extract characters before pattern _
   mutate(longitude = sub(".*_", "", latlon)) %>% # Extract characters after pattern _
   mutate_at(vars(latitude, longitude), list(as.numeric)) %>%
-  glimpse() # Rows: 1,209,958
+  glimpse() # Rows: 1,437,084
 
 
 ## vector of years --
-years <- paste(1984:2020)
-length(years) # 37
+years <- paste(1984:2021)
+length(years) # 38
 
 # load blank raster ----
 blank <- raster(paste(r.dir, "NC_blank.tif", sep ='/'))
 extent(blank)
 
 # choose cell size fot aggregate factor --
-agg.fact <- 300/30 # for cell size ~ 200m
+agg.fact <- 200/30 # for cell size ~ 200m
 res <- "200m"
-#agg.fact <- 500/30 # for cell size ~ 500m
+# agg.fact <- 500/30 # for cell size ~ 500m
 
 # make empty raster stack to save --
 k.years <- stack()
 
 # summary stat being calulated --
-var <- "mean_kelp_biomass"
+var <- "mean_kelp_area"
 
 coast <- "NC"
 
@@ -120,7 +121,8 @@ for(i in 1:length(1:length(years))){
   names(raster.year) <- name.r
   
   # aggregate raster
-  raster.year.agg <- raster::aggregate(raster.year, fact = agg.fact, fun = sum) # sum for the total biomass in the area of the cell
+  # sum for the total kelp area in the area of the cell
+  raster.year.agg <- raster::aggregate(raster.year, fact = agg.fact, fun = sum) 
   
   # add to raster stack
   k.years <- stack(k.years, raster.year.agg)

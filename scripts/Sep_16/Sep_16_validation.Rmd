@@ -45,9 +45,10 @@ w.dir <- here()
 d.dir <- here('data')
 r1.dir <- here('spatial_data/sp_predictions_300m')
 r2.dir <- here('spatial_data/sp_predictions_150m')
+r3.dir <- here('spatial_data/sp_predictions_600m')
 r4.dir <- here('spatial_data/sp_predictions_900m')
-# r3.dir <- here('spatial_data/sp_predictions_150m_resolution')
-# r4.dir <- here('spatial_data/sp_predictions_600m_resolution')
+r5.dir <- here('spatial_data/sp_predictions_120m')
+r6.dir <- here('spatial_data/sp_predictions_1500m')
 
 # read and transform the observed data to the log scale
 df <- read.csv(paste(d.dir, 
@@ -78,7 +79,7 @@ head(obs)
 Extract the predicted $log$ kelps density of every year for each site at different resolutions.
 
 ```{r}
-# kelp density predictions at 300m resolution
+# kelp density predictions at 300m resolution ----
 
 # read the .csv file
 site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
@@ -105,11 +106,11 @@ merge_df <- left_join(pred,
                       site %>% dplyr::select(c(site_name, longitude, latitude)),
                       by = 'site_name')
 
-write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_300m.csv'), row.names = FALSE)
+# write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_300m.csv'), row.names = FALSE)
 ```
 
 ```{r}
-# kelp density predictions at 150m resolution
+# kelp density predictions at 150m resolution ----
 
 # read the .csv file
 site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
@@ -136,7 +137,38 @@ merge_df <- left_join(pred,
                       site %>% dplyr::select(c(site_name, longitude, latitude)),
                       by = 'site_name')
 
-write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_150m.csv'), row.names = FALSE)
+# write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_150m.csv'), row.names = FALSE)
+```
+
+```{r}
+# kelp density predictions at 600m resolution ----
+
+# read the .csv file
+site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
+# convert from .csv to .shp
+site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+
+# declaring an empty data frame
+pred <- data.frame(site_name = character(),
+                   year = numeric(),
+                   fit = numeric())
+
+for (i in c(2006:2021)) {
+  rast <- rast(paste0(r3.dir, paste0('/', i, '_Log_Nereo_NC.tif')))
+  ext <- terra::extract(rast, vect(site_shp$geometry)) %>%
+    mutate(site_name = site$site_name, year = as.factor(i), .before = fit) %>%
+    dplyr::select(-ID)
+  pred <- rbind(pred, ext)
+}
+
+head(pred)
+
+# write to cvs
+merge_df <- left_join(pred,
+                      site %>% dplyr::select(c(site_name, longitude, latitude)),
+                      by = 'site_name')
+
+# write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_600m.csv'), row.names = FALSE)
 ```
 
 ```{r}
@@ -167,7 +199,69 @@ merge_df <- left_join(pred,
                       site %>% dplyr::select(c(site_name, longitude, latitude)),
                       by = 'site_name')
 
-write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_900m.csv'), row.names = FALSE)
+# write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_900m.csv'), row.names = FALSE)
+```
+
+```{r}
+# kelp density predictions at 120m resolution
+
+# read the .csv file
+site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
+# convert from .csv to .shp
+site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+
+# declaring an empty data frame
+pred <- data.frame(site_name = character(),
+                   year = numeric(),
+                   fit = numeric())
+
+for (i in c(2006:2021)) {
+  rast <- rast(paste0(r5.dir, paste0('/', i, '_Log_Nereo_NC.tif')))
+  ext <- terra::extract(rast, vect(site_shp$geometry)) %>%
+    mutate(site_name = site$site_name, year = as.factor(i), .before = fit) %>%
+    dplyr::select(-ID)
+  pred <- rbind(pred, ext)
+}
+
+head(pred)
+
+# write to cvs
+merge_df <- left_join(pred,
+                      site %>% dplyr::select(c(site_name, longitude, latitude)),
+                      by = 'site_name')
+
+# write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_120m.csv'), row.names = FALSE)
+```
+
+```{r}
+# kelp density predictions at 1500m resolution
+
+# read the .csv file
+site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
+# convert from .csv to .shp
+site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+
+# declaring an empty data frame
+pred <- data.frame(site_name = character(),
+                   year = numeric(),
+                   fit = numeric())
+
+for (i in c(2006:2021)) {
+  rast <- rast(paste0(r6.dir, paste0('/', i, '_Log_Nereo_NC.tif')))
+  ext <- terra::extract(rast, vect(site_shp$geometry)) %>%
+    mutate(site_name = site$site_name, year = as.factor(i), .before = fit) %>%
+    dplyr::select(-ID)
+  pred <- rbind(pred, ext)
+}
+
+head(pred)
+
+# write to cvs
+merge_df <- left_join(pred,
+                      site %>% dplyr::select(c(site_name, longitude, latitude)),
+                      by = 'site_name')
+
+# write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_1500m.csv'), row.names = FALSE)
 ```
 
 ## Comparison
@@ -176,10 +270,7 @@ write.csv(merge_df, file.path(d.dir, 'NC_kelp_density_predictions_900m.csv'), ro
 # kelp density predictions at 300m resolution
 pred_300m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_300m.csv', sep ='/')) %>%
   mutate_at(vars(year, site_name), list(as.factor))
-head(pred_300m)
-```
 
-```{r}
 kelp_data_300m <- left_join(pred_300m, obs, by = c('site_name', 'year')) %>%
   group_by(site_name) %>%
   arrange(year, .by_group = TRUE) %>%
@@ -191,10 +282,7 @@ head(kelp_data_300m)
 # kelp density predictions at 150m resolution
 pred_150m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_150m.csv', sep ='/')) %>%
   mutate_at(vars(year, site_name), list(as.factor))
-head(pred_150m)
-```
 
-```{r}
 kelp_data_150m <- left_join(pred_150m, obs, by = c('site_name', 'year')) %>%
   group_by(site_name) %>%
   arrange(year, .by_group = TRUE) %>%
@@ -203,13 +291,22 @@ head(kelp_data_150m)
 ```
 
 ```{r}
-# kelp density predictions at 900m resolution
-pred_900m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_900m.csv', sep ='/')) %>%
+# kelp density predictions at 600m resolution
+pred_600m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_600m.csv', sep ='/')) %>%
   mutate_at(vars(year, site_name), list(as.factor))
-head(pred_900m)
+
+kelp_data_600m <- left_join(pred_600m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_600m)
 ```
 
 ```{r}
+# kelp density predictions at 900m resolution
+pred_900m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_900m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
 kelp_data_900m <- left_join(pred_900m, obs, by = c('site_name', 'year')) %>%
   group_by(site_name) %>%
   arrange(year, .by_group = TRUE) %>%
@@ -217,12 +314,36 @@ kelp_data_900m <- left_join(pred_900m, obs, by = c('site_name', 'year')) %>%
 head(kelp_data_900m)
 ```
 
+```{r}
+# kelp density predictions at 120m resolution
+pred_120m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_120m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_120m <- left_join(pred_120m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_120m)
+```
+
+```{r}
+# kelp density predictions at 1500m resolution
+pred_1500m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_1500m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_1500m <- left_join(pred_1500m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_1500m)
+```
+
 ## Plotting
 
 Plot log of kelps density vs year for each site at different resolutions.
 
 ```{r}
-sites <- unique(kelp_data_900m$site_name) 
+sites <- unique(kelp_data_300m$site_name) 
 
 kelp_longer_300m <- kelp_data_300m %>%
   dplyr::select(-c(longitude, latitude)) %>%
@@ -260,10 +381,27 @@ kelp_longer_600m <- kelp_data_600m %>%
     ) %>%
   mutate(resolution = as.factor(600))
 
-kelp_longer <- rbind(kelp_longer_150m, kelp_longer_300m,
-                     kelp_longer_600m, kelp_longer_900m)
+kelp_longer_120m <- kelp_data_120m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(120))
 
-kelp_longer <- rbind(kelp_longer_900m)
+kelp_longer_1500m <- kelp_data_1500m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(1500))
+
+kelp_longer <- rbind(kelp_longer_120m, kelp_longer_150m, 
+                     kelp_longer_300m, kelp_longer_600m, 
+                     kelp_longer_900m, kelp_longer_1500m)
 
 for (i in sites) {
   plot <- kelp_longer %>% 
@@ -276,7 +414,7 @@ for (i in sites) {
     geom_bar(aes(x = year, y = fit, 
                  fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')), 
              stat = 'identity', position = 'dodge', alpha = 0.2) +
-    facet_wrap(. ~ resolution, nrow = 2) + 
+    facet_wrap(. ~ resolution, nrow = 3) + 
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 90, size = 8), 
           plot.title = element_text(hjust = 0.5),

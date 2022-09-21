@@ -1,8 +1,5 @@
-##
-
 # by Anita Giraldo 5 April 2022
 # last modified by Anita Giraldo 5 april 2022
-
 
 # This script makes rasters of mean kelp biomass for each year of Landsat data 
 # from a .csv file
@@ -28,7 +25,7 @@ library(beepr)
 
 
 
-## Rasters of kelp biomass for each year ----
+## Rasters of kelp area for each year ----
 # To do this, I aggregated from 30m cells to ~200m (loop can change this)
 # so the final raster stack would no be so huge
 
@@ -95,7 +92,7 @@ coast <- "NC"
 
 # 2. Loop to get raster and aggregate ----
 
-for(i in 1:length(1:length(years))){
+for(i in 1:length(1)){
   
   # get year 
   year.x <- years[i]
@@ -114,7 +111,7 @@ for(i in 1:length(1:length(years))){
   blank.year
   
   # rasterize the mean kelp year  
-  raster.year <- rasterize(sp.year, blank.year, field = "mean_biomass", fun = mean, update = TRUE)
+  raster.year <- rasterize(sp.year, blank.year, field = "mean_area", fun = mean, update = TRUE)
   
   # name raster layer with year
   name.r <- paste(var, year.x, sep = '_')
@@ -126,11 +123,10 @@ for(i in 1:length(1:length(years))){
   
   # add to raster stack
   k.years <- stack(k.years, raster.year.agg)
-  
 }
 
 # save raster
-file.name <- paste(coast, var, "84-20", res, sep = '_')
+file.name <- paste(coast, var, "84-21", res, sep = '_')
 writeRaster(k.years, paste(r.dir, paste(file.name, "tif", sep ='.'), sep = '/'), overwrite = TRUE)
 
 

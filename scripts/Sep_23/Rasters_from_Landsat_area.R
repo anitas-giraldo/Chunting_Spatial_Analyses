@@ -92,7 +92,41 @@ coast <- "NC"
 
 # 2. Loop to get raster and aggregate ----
 
-for(i in 1:length(1)){
+for(i in 1:length(1)) {
+  
+  # get year 
+  year.x <- years[i]
+  kelp.year <- df3 %>%
+    dplyr::filter(year == print(year.x)) %>%
+    droplevels() %>%
+    glimpse()
+  
+  # make spatial points
+  sp.year <- kelp.year
+  coordinates(sp.year) <- ~longitude + latitude
+  proj4string(sp.year) <- "+proj=longlat +datum=WGS84 +no_defs"
+  
+  # make new blank
+  blank.year <- blank
+  blank.year
+  
+  # rasterize the mean kelp year  
+  raster.year <- rasterize(sp.year, blank.year, field = "mean_area", fun = mean, update = TRUE)
+  
+  # name raster layer with year
+  name.r <- paste(var, year.x, sep = '_')
+  names(raster.year) <- name.r
+  
+  # aggregate raster
+  # sum for the total kelp area in the area of the cell
+  raster.year.agg <- raster::aggregate(raster.year, fact = agg.fact, fun = sum) 
+  
+  # add to raster stack
+  k.years <- stack(k.years, raster.year.agg)
+}
+
+
+for(i in 1:length(1:length(years))) {
   
   # get year 
   year.x <- years[i]

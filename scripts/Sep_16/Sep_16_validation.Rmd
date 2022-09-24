@@ -162,12 +162,38 @@ kelp_data_1500m <- left_join(pred_1500m, obs, by = c('site_name', 'year')) %>%
 head(kelp_data_1500m)
 ```
 
+```{r}
+# kelp density predictions at 120m resolution
+pred_120m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_120m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_120m <- left_join(pred_120m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_120m)
+```
+
+```{r}
+# kelp density predictions at 150m resolution
+pred_150m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_150m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_150m <- left_join(pred_150m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_150m)
+```
+
 ## Plotting
 
 Plot log of kelps density vs year for each site at different resolutions.
 
 ```{r}
 sites <- unique(kelp_data_300m$site_name) 
+sites <- sites[-c(5, 7, 12, 20, 24)] 
+res <- c(120, 150, 300, 600, 900, 1500)
 
 kelp_longer_300m <- kelp_data_300m %>%
   dplyr::select(-c(longitude, latitude)) %>%
@@ -178,6 +204,24 @@ kelp_longer_300m <- kelp_data_300m %>%
     ) %>%
   mutate(resolution = as.factor(300))
 
+kelp_longer_600m <- kelp_data_600m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(600))
+
+kelp_longer_900m <- kelp_data_900m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(900))
+
 kelp_longer_1500m <- kelp_data_1500m %>%
   dplyr::select(-c(longitude, latitude)) %>%
   pivot_longer(
@@ -187,7 +231,27 @@ kelp_longer_1500m <- kelp_data_1500m %>%
     ) %>%
   mutate(resolution = as.factor(1500))
 
-kelp_longer <- rbind(kelp_longer_300m, kelp_longer_1500m)
+kelp_longer_120m <- kelp_data_120m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(120))
+
+kelp_longer_150m <- kelp_data_150m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(150))
+
+kelp_longer <- rbind(kelp_longer_120m, kelp_longer_150m,
+                     kelp_longer_300m, kelp_longer_600m,
+                     kelp_longer_900m, kelp_longer_1500m)
 
 for (i in sites) {
   plot <- kelp_longer %>% 

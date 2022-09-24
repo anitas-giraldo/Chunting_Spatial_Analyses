@@ -126,6 +126,18 @@ head(kelp_data_300m)
 ```
 
 ```{r}
+# kelp density predictions at 600m resolution
+pred_600m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_600m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_600m <- left_join(pred_600m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+head(kelp_data_600m)
+```
+
+```{r}
 # kelp density predictions at 1500m resolution
 pred_1500m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_1500m.csv', sep ='/')) %>%
   mutate_at(vars(year, site_name), list(as.factor))

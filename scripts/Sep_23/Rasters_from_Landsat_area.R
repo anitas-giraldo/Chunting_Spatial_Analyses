@@ -57,12 +57,13 @@ df2 <- df %>%
 df3 <- df2 %>%
   # get only summer (Q3)
   filter(quarter == 3) %>%
+  droplevels() %>%
   # get the average kelp for each year 
-  group_by(year, latlon) %>%
-  summarise(mean_area = mean(area, na.rm = TRUE),
-            max_area = max(area, na.rm = TRUE),
-            sd_area = sd(area, na.rm = TRUE)) %>% 
-  ungroup() %>%
+  # group_by(year, latlon) %>%
+  # summarise(mean_area = mean(area, na.rm = TRUE),
+  #           max_area = max(area, na.rm = TRUE),
+  #           sd_area = sd(area, na.rm = TRUE)) %>% 
+  # ungroup() %>%
   mutate(latitude = sub("_.*", "", latlon)) %>% # Extract characters before pattern _
   mutate(longitude = sub(".*_", "", latlon)) %>% # Extract characters after pattern _
   mutate_at(vars(latitude, longitude), list(as.numeric)) %>%
@@ -96,11 +97,11 @@ coast <- "NC"
 kelp.year <- df3 %>%
   dplyr::filter(year == 1984) %>%
   droplevels() %>%
-  glimpse()
+  glimpse() # 37,818
 
 # make spatial points
 sp.year <- kelp.year
-coordinates(sp.year) <- ~longitude + latitude
+coordinates(sp.year) <- ~lon + lat
 proj4string(sp.year) <- "+proj=longlat +datum=WGS84 +no_defs"
 
 # make new blank
@@ -108,7 +109,7 @@ blank.year <- blank
 blank.year
 
 # rasterize the mean kelp year
-raster.year <- rasterize(sp.year, blank.year, field = "mean_area", fun = mean, update = TRUE)
+raster.year <- rasterize(sp.year, blank.year, field = "area", fun = mean, update = TRUE)
 
 ------
   

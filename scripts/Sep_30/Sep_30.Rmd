@@ -36,6 +36,9 @@ library(plotrix)
 Validate predictions using LANDSAT data for kelp area.
 
 ```{r}
+# clear environment
+rm(list = ls())
+
 # set a directory
 r.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Landsat_rasters'
 d.dir <- here('data')
@@ -46,6 +49,8 @@ o.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatia
 ## Aggregate LANDSAT data
 
 ```{r}
+year <- 1984:2021
+
 # # list files
 # n.files <- dir(r.dir)
 # n.files <- list.files(r.dir, pattern = '.tif$')
@@ -57,7 +62,6 @@ o.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatia
 # # agg.fact <- 600/30 # ~600m
 # # agg.fact <- 900/30 # ~900m
 # # agg.fact <- 1500/30 # ~1500m
-# year <- 1984:2021
 # 
 # for (i in 1:length(n.files)) {
 #   area.rast <- rast(paste(r.dir, n.files[i], sep = '/'))
@@ -76,29 +80,39 @@ o.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatia
 Extract the Landsat data of every year (1984 - 2021) for each site in the North Coast.
 
 ```{r}
-# load info on RCCA
-site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
-
-# convert from .csv to .shp
-site.shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
-
-# declaring an empty data frame
-landsat <- data.frame(site_name = character(), 
-                      year = numeric(),
-                      area = numeric())
-
-k.dir <- paste(o.dir, '300m_res', sep = '/')
-k.files <- dir(k.dir)
-k.files <- list.files(k.dir, pattern = '.tif$')
-  
-for (i in 1:3) {
-  kelp.rast <- rast(paste(k.dir, k.files[i], sep = '/'))
-  ext <- terra::extract(kelp.rast, vect(site.shp)$geometry)
-  print(ext)
-}
-
+# # load info on RCCA
+# site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
+# 
+# # convert from .csv to .shp
+# site.shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+# 
+# # initialize an empty data frame
+# landsat <- data.frame(site_name = character(), 
+#                       year = numeric(),
+#                       area = numeric(),
+#                       stringsAsFactors = FALSE)
+# 
+# k.dir <- paste(o.dir, '150m_res', sep = '/')
+# k.files <- dir(k.dir)
+# k.files <- list.files(k.dir, pattern = '.tif$')
+# 
+# # extract Landsat data
+# for (i in 1:length(k.files)) {
+#   kelp.rast <- rast(paste(k.dir, k.files[i], sep = '/'))
+#   ext <- terra::extract(kelp.rast, vect(site.shp$geometry)) %>%
+#     mutate(site_name = site$site_name, year = as.factor(year[i]), .after = ID) %>%
+#     dplyr::select(-ID)
+#   landsat <- rbind(landsat, setNames(ext, names(landsat)))
+# }
+# 
+# # save as .csv
+# write.csv(landsat, file.path(o.dir, 'NC_mean_kelp_area_1984-2021_150m.csv'))
 ```
 
+## Plot
+
+```{r}
+```
 
 
 

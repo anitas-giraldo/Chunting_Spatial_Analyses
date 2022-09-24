@@ -192,7 +192,7 @@ Plot log of kelps density vs year for each site at different resolutions.
 
 ```{r}
 sites <- unique(kelp_data_300m$site_name) 
-sites <- sites[-c(5, 7, 12, 20, 24)] 
+sites <- sites[-c(5, 7, 12, 20, 24)] # the ones with no predicted values
 res <- c(120, 150, 300, 600, 900, 1500)
 
 kelp_longer_300m <- kelp_data_300m %>%

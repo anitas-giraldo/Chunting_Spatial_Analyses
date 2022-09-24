@@ -112,6 +112,38 @@ Extract the Landsat data of every year (1984 - 2021) for each site in the North 
 ## Plot
 
 ```{r}
+# kelp density predictions at 300m resolution
+kelp.density <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_300m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor)) 
+
+# Landsat kelp area at 300m resolution
+kelp.area <- read.csv(paste(o.dir, 'NC_mean_kelp_area_1984-2021_300m.csv', sep = '/')) %>%
+  dplyr::select(-X) %>%
+  mutate_at(vars(year), list(as.factor)) %>%
+  filter(!(year %in% c(1984:2003)))
+
+# sites <- kelp.area$site_name %>% unique()
+# sites <- sites[-c(5, 7, 12, 20, 24)] # the ones with no predicted values
+sites <- 'Caspar'
+
+for (i in sites) {
+  plot <- ggplot() + 
+    geom_bar(data = filter(kelp.density, site_name == i),
+             aes(x = year, y = fit,
+                 fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')),
+             stat = 'identity', position = 'dodge', alpha = 0.2) + 
+    geom_line(data = filter(kelp.area, site_name == i),
+              aes(x = year, y = area, group = 1), size = 0.3) + 
+    scale_y_continuous(name = 'area', sec.axis = sec_axis(~./2, name = 'fit')) + 
+    labs(fill = 'fit >= 6.6', title = i) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90, size = 7),
+          plot.title = element_text(hjust = 0.5),
+          panel.grid.major = element_blank(),
+          legend.title = element_text(size = 9),
+          legend.text = element_text(size = 7))
+  print(plot)
+}
 ```
 
 

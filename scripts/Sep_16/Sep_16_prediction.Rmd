@@ -616,7 +616,6 @@ for (i in 1:length(year.list)) {
   
   # 2. stack with predictors for that year
   # env.raster <- c(d2, max_nit4[[i+6]], whmax.stack4[[i]], wymean.stack4[[i]])
-  
   # env.raster <- c(d2, mean_up_T4[[i+6]], max_nit4[[i+6]], whmax.stack4[[i]], wymean.stack4[[i]])
   
   # V3

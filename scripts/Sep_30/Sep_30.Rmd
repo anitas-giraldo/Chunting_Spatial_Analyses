@@ -132,8 +132,9 @@ for (i in sites) {
              aes(x = year, y = fit,
                  fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')),
              stat = 'identity', position = 'dodge', alpha = 0.2) + 
-    geom_line(data = filter(kelp.area, site_name == i),
+    geom_point(data = filter(kelp.area, site_name == i),
               aes(x = year, y = area, group = 1), size = 0.3) + 
+    geom_line() + 
     scale_y_continuous(name = 'area', sec.axis = sec_axis(~./2, name = 'fit')) + 
     labs(fill = 'fit >= 6.6', title = i) + 
     theme_bw() + 

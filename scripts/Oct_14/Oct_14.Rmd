@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = T,
                       message = F,
                       warning = F,
                       fig.width = 8,
-                      fig.height = 10,
+                      fig.height = 14,
                       fig.align = 'center')
 library(sp)
 library(sf)
@@ -29,6 +29,7 @@ library(tidyr)
 library(RColorBrewer)
 library(here)
 library(tidyverse)
+library(plotrix)
 ```
 
 ## Objective
@@ -126,26 +127,57 @@ df <- df.list %>% reduce(full_join, by = 'year')
 ```
 
 ```{r}
+filter(df, year == '2008') %>% pander()
+``` 
 
-max <- filter(df, resolution == 300) %>%
+```{r}
+max <- filter(df, resolution == 900) %>%
   summarise(across(c(fit, mean.area), ~max(.x, na.rm = TRUE), .names = 'max_{.col}')) %>%
   mutate(ratio = max_mean.area / max_fit) %>%
   select(ratio)
-factor = max$ratio
+factor = 12
   
-ggplot(filter(df, resolution == 300), aes(x = year, y = fit*factor)) + 
+ggplot(df, aes(x = year, y = fit*factor)) + 
   geom_bar(stat = 'identity', color = 'black', fill = 'peachpuff', position = position_dodge()) +
   geom_errorbar(aes(ymin = (fit - se.fit)*factor, ymax = (fit + se.fit)*factor), 
                 width = 0.2, position = position_dodge(0.9)) +
   geom_pointrange(aes(x = year, y = mean.obs*factor, 
                       ymin = (mean.obs - se.obs)*factor, ymax = (mean.obs + se.obs)*factor),
-                  alpha = 0.5, size = 0.5, color = 'blue') + 
+                  alpha = 0.5, size = 0.3, color = 'blue') + 
   geom_line(aes(x = year, y = mean.obs*factor, group = 1), size = 0.3, color = 'blue') + 
   geom_pointrange(aes(x = year, y = mean.area, 
                       ymin = mean.area - se.area, ymax = mean.area + se.area),
-                  alpha = 1, size = 0.3, color = 'red') + 
+                  alpha = 0.5, size = 0.3, color = 'red') + 
   geom_line(aes(x = year, y = mean.area, group = 1), linetype = 'dashed', color = 'red') +
   scale_y_continuous(name = 'area', 
                      sec.axis = sec_axis(~. / factor, name = 'density')) + 
+  facet_wrap(. ~ resolution, nrow = 4) + 
   theme_bw()
+```
+
+```{r, fig.width=8, fig.height=6}
+for (i in res) {
+  max <- filter(df, resolution == i) %>%
+    summarise(across(c(fit, mean.area), ~max(.x, na.rm = TRUE), .names = 'max_{.col}')) %>%
+    mutate(ratio = max_mean.area / max_fit) %>%
+    select(ratio)
+  factor = max$ratio
+
+  plot <- ggplot(filter(df, resolution == i), aes(x = year, y = fit*factor)) +
+    geom_bar(stat = 'identity', color = 'black', fill = 'peachpuff', position = position_dodge()) +
+    geom_errorbar(aes(ymin = (fit - se.fit)*factor, ymax = (fit + se.fit)*factor),
+                  width = 0.2, position = position_dodge(0.9)) +
+    geom_pointrange(aes(x = year, y = mean.obs*factor,
+                        ymin = (mean.obs - se.obs)*factor, ymax = (mean.obs + se.obs)*factor),
+                    alpha = 0.5, size = 0.3, color = 'blue') +
+    geom_line(aes(x = year, y = mean.obs*factor, group = 1), size = 0.3, color = 'blue') +
+    geom_pointrange(aes(x = year, y = mean.area,
+                        ymin = mean.area - se.area, ymax = mean.area + se.area),
+                    alpha = 1, size = 0.3, color = 'red') +
+    geom_line(aes(x = year, y = mean.area, group = 1), linetype = 'dashed', color = 'red') +
+    scale_y_continuous(name = 'area', sec.axis = sec_axis(~. / factor, name = 'density')) +
+    theme_bw()
+
+  print(plot)
+}
 ```

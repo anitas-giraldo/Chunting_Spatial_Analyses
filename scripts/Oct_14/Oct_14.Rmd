@@ -28,7 +28,7 @@ library(dplyr)
 library(tidyr)
 library(RColorBrewer)
 library(here)
-library(plotrix)
+library(tidyverse)
 ```
 
 ## Objective
@@ -44,6 +44,8 @@ d.dir <- here('data')
 r.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data'
 ```
 
+## Predicted Kelp Density
+
 Calculate the average of predicted kelp density for each resolution from 2004 to 2021 in the North Coast.
 
 ```{r}
@@ -53,19 +55,26 @@ res <- c(120, 300, 900, 1500)
 # initialize an empty data frame
 kelp.density <- data.frame(year = factor(),
                            resolution = factor(),
-                           fit = numeric())
+                           fit = numeric(),
+                           se.fit = numeric())
 
+# calculate the mean and standard error of predicted kelp density for every year
 for (i in res) {
   res.dir <- paste(r.dir, paste0('sp_predictions_', i, 'm'), sep = '/')
   for (j in year) {
     mean.fit <- rast(paste0(res.dir, paste0('/', j, '_Log_Nereo_NC.tif'))) %>%
       values() %>%
-      mean(na.rm = TRUE)
-    data <- data.frame(year = factor(j), resolution = factor(i), fit = mean.fit)
-    kelp.density <- rbind(kelp.density, data)
+      data.frame() %>%
+      summarise_at(vars(fit), list(mean = mean, se = std.error), na.rm = TRUE) %>%
+      mutate(year = factor(j), resolution = factor(i), .before = mean)
+    kelp.density <- rbind(kelp.density, setNames(mean.fit, names(kelp.density)))
   }
 }
+
+head(kelp.density) %>% pander()
 ```
+
+## Landsat Kelp Area
 
 Calculate the average of Landsat kelp area from 2004 to 2021 in the North Coast.
 
@@ -74,22 +83,18 @@ area <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep = '/')) 
   filter(quarter == 3) %>%
   mutate_at(vars(year, quarter), list(as.factor))
 
-# initialize an empty data frame
-kelp.area <- data.frame(year = factor(),
-                        area = numeric(),
-                        se = numeric())
+# calculate the mean and standard error of Landsat kelp area for every year
+kelp.area <- area %>%
+  group_by(year) %>%
+  summarise_at(vars(area), list(mean.area = mean, se.area = std.error), na.rm = TRUE) %>%
+  filter(year %in% c(2004:2021))
 
-for (i in year) {
-  mean.area <- area %>%
-    filter(year == i) %>%
-    summarise_at(vars(area), list(mean = mean, se = std.error), na.rm = TRUE) %>%
-    mutate(year = factor(i), .before = mean)
-  kelp.area <- rbind(kelp.area, setNames(mean.area, names(kelp.area)))
-}
+head(kelp.area) %>% pander()
 ```
 
+## Observed Data
 
-Calculate the average of "in situ" survey data from 2004 to 2021 in the North Coast.
+Calculate the average of "in situ" survey data from 2006 to 2021 in the North Coast.
 
 ```{r}
 # read and transform the observed data to the log scale
@@ -99,5 +104,48 @@ obs.data <- read.csv(paste(d.dir,
   dplyr::select(site_name, year, transect, zone, latitude, longitude, den_NERLUE) %>%
   mutate_at(vars(year, transect, zone, site_name), list(as.factor)) %>%
   mutate(log_den_NERLUE = log(den_NERLUE)) 
+
+# note that log(0) returns -Inf
+obs.data$log_den_NERLUE <- replace(obs.data$log_den_NERLUE, obs.data$log_den_NERLUE == -Inf, 0)
+
+# calculate the mean and standard error of kelp density of every year 
+obs.density <- obs.data %>%
+  group_by(year) %>%
+  summarise_at(vars(log_den_NERLUE), list(mean.obs = mean, se.obs = std.error), na.rm = TRUE)
+
+head(obs.density) %>% pander()
 ```
 
+## Plot
+
+```{r}
+# put all data frames into list
+df.list <- list(kelp.density, kelp.area, obs.density)
+# merge all data frames together
+df <- df.list %>% reduce(full_join, by = 'year')
+```
+
+```{r}
+
+max <- filter(df, resolution == 300) %>%
+  summarise(across(c(fit, mean.area), ~max(.x, na.rm = TRUE), .names = 'max_{.col}')) %>%
+  mutate(ratio = max_mean.area / max_fit) %>%
+  select(ratio)
+factor = max$ratio
+  
+ggplot(filter(df, resolution == 300), aes(x = year, y = fit*factor)) + 
+  geom_bar(stat = 'identity', color = 'black', fill = 'peachpuff', position = position_dodge()) +
+  geom_errorbar(aes(ymin = (fit - se.fit)*factor, ymax = (fit + se.fit)*factor), 
+                width = 0.2, position = position_dodge(0.9)) +
+  geom_pointrange(aes(x = year, y = mean.obs*factor, 
+                      ymin = (mean.obs - se.obs)*factor, ymax = (mean.obs + se.obs)*factor),
+                  alpha = 0.5, size = 0.5, color = 'blue') + 
+  geom_line(aes(x = year, y = mean.obs*factor, group = 1), size = 0.3, color = 'blue') + 
+  geom_pointrange(aes(x = year, y = mean.area, 
+                      ymin = mean.area - se.area, ymax = mean.area + se.area),
+                  alpha = 1, size = 0.3, color = 'red') + 
+  geom_line(aes(x = year, y = mean.area, group = 1), linetype = 'dashed', color = 'red') +
+  scale_y_continuous(name = 'area', 
+                     sec.axis = sec_axis(~. / factor, name = 'density')) + 
+  theme_bw()
+```

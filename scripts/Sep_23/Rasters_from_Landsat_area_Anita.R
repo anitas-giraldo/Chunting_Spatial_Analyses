@@ -154,9 +154,3 @@ for(i in 1:length(1:length(years))) {
   writeRaster(raster.year, paste(o.dir, paste(file.name, "tif", sep ='.'), sep = '/'), overwrite = TRUE)
   
 }
-
-
-
-
-
-

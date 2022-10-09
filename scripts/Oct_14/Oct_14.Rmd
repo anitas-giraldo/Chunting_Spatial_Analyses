@@ -1,0 +1,78 @@
+---
+title: "SURE Project"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      cache = T,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      fig.width = 8,
+                      fig.height = 10,
+                      fig.align = 'center')
+library(sp)
+library(sf)
+library(terra)
+library(raster)
+library(rgdal)
+library(pander)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(RColorBrewer)
+library(here)
+library(plotrix)
+```
+
+## Objective
+
+Summarize results.
+
+```{r}
+# clear environment
+rm(list = ls())
+
+# set a directory
+d.dir <- here('data')
+r.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data'
+```
+
+Calculate the average of predicted kelp density for each resolution from 2004 to 2021 in the North Coast.
+
+```{r}
+year <- 2004:2021
+res <- c(120, 300, 900, 1500)
+
+# initialize an empty data frame
+kelp.density <- data.frame(year = factor(),
+                           resolution = factor(),
+                           fit = numeric())
+
+for (i in res) {
+  res.dir <- paste(r.dir, paste0('sp_predictions_', i, 'm'), sep = '/')
+  for (j in year) {
+    mean.fit <- rast(paste0(res.dir, paste0('/', j, '_Log_Nereo_NC.tif'))) %>%
+      values() %>%
+      mean(na.rm = T)
+    data <- data.frame(year = factor(j), resolution = factor(i), fit = mean.fit)
+    kelp.density <- rbind(kelp.density, data)
+  }
+}
+```
+
+
+```{r}
+kelp.area <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep = '/')) %>%
+  
+```
+
+
+
+

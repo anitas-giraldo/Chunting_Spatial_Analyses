@@ -1,0 +1,431 @@
+---
+title: "SURE Project"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      cache = T,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      fig.align = 'center')
+library(sp)
+library(sf)
+library(terra)
+library(raster)
+library(rgdal)
+library(pander)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(RColorBrewer)
+library(here)
+library(tidyverse)
+library(plotrix)
+```
+
+## Figure 1
+
+```{r}
+# clear environment
+rm(list = ls())
+
+# set a directory
+w.dir <- here()
+d.dir <- here('data')
+r.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data'
+
+r1.dir <- paste(r.dir, 'sp_predictions_300m', sep ='/')
+r2.dir <- paste(r.dir, 'sp_predictions_1500m', sep ='/')
+r4.dir <- paste(r.dir, 'sp_predictions_900m', sep ='/')
+r6.dir <- paste(r.dir, 'sp_predictions_120m', sep ='/')
+
+## Predicted Kelp Density
+
+# Calculate the average of predicted kelp density for each resolution from 2004 
+# to 2021 in the North Coast.
+
+year <- 2004:2021
+res <- c(120, 300, 900, 1500)
+
+# initialize an empty data frame
+kelp.density <- data.frame(year = factor(),
+                           resolution = factor(),
+                           fit = numeric(),
+                           se.fit = numeric())
+
+# calculate the mean and standard error of predicted kelp density for every year
+for (i in res) {
+  res.dir <- paste(r.dir, paste0('sp_predictions_', i, 'm'), sep = '/')
+  for (j in year) {
+    mean.fit <- rast(paste0(res.dir, paste0('/', j, '_Log_Nereo_NC.tif'))) %>%
+      values() %>%
+      data.frame() %>%
+      summarise_at(vars(fit), list(mean = mean, se = std.error), na.rm = TRUE) %>%
+      mutate(year = factor(j), resolution = factor(i), .before = mean)
+    kelp.density <- rbind(kelp.density, setNames(mean.fit, names(kelp.density)))
+  }
+}
+
+# head(kelp.density) %>% pander()
+
+## Landsat Kelp Area
+
+# Calculate the average of Landsat kelp area from 2004 to 2021 in the North Coast.
+
+area <- read.csv(paste(d.dir, 'NC_Landsat_kelp_area_1984_2021.csv', sep = '/')) %>%
+  filter(quarter == 3) %>%
+  mutate_at(vars(year, quarter), list(as.factor))
+
+# calculate the mean and standard error of Landsat kelp area for every year
+kelp.area <- area %>%
+  group_by(year) %>%
+  summarise_at(vars(area), list(mean.area = mean, se.area = std.error), na.rm = TRUE) %>%
+  filter(year %in% c(2004:2021))
+
+# head(kelp.area) %>% pander()
+
+## Observed Data
+
+# Calculate the average of "in situ" survey data from 2006 to 2021 in the North Coast.
+
+# read and transform the observed data to the log scale
+obs.data <- read.csv(paste(d.dir, 
+                           'RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp.csv',
+                           sep = '/')) %>%
+  dplyr::select(site_name, year, transect, zone, latitude, longitude, den_NERLUE) %>%
+  mutate_at(vars(year, transect, zone, site_name), list(as.factor)) %>%
+  mutate(log_den_NERLUE = log(den_NERLUE)) 
+
+# note that log(0) returns -Inf
+obs.data$log_den_NERLUE <- replace(obs.data$log_den_NERLUE, obs.data$log_den_NERLUE == -Inf, 0)
+
+# calculate the mean and standard error of kelp density of every year 
+obs.density <- obs.data %>%
+  group_by(year) %>%
+  summarise_at(vars(log_den_NERLUE), list(mean.obs = mean, se.obs = std.error), na.rm = TRUE)
+
+# head(obs.density) %>% pander()
+```
+
+```{r, fig.width=6, fig.height=4}
+## Plot
+
+# put all data frames into list
+df.list <- list(kelp.density, kelp.area, obs.density)
+# merge all data frames together
+df <- df.list %>% reduce(full_join, by = 'year')
+
+new.label <- c('120' = '120x120', '300' = '300x300', 
+               '900' = '900x900', '1500' = '1500x1500')
+
+ggplot(df, aes(x = year, y = fit)) + 
+  geom_bar(stat = 'identity', color = 'black', alpha = 0.5, 
+           position = position_dodge(), fill = 'skyblue') +
+  geom_errorbar(aes(ymin = fit - se.fit, ymax = fit + se.fit), 
+                width = 0.5, position = position_dodge(0.9)) +
+  geom_pointrange(aes(x = year, y = mean.obs, 
+                      ymin = mean.obs - se.obs, ymax = mean.obs + se.obs),
+                  alpha = 1, size = 0.5, color = 'red') + 
+  geom_line(aes(x = year, y = mean.obs, group = 1), size = 0.5, color = 'red') +
+  facet_wrap(. ~ resolution, nrow = 2, ncol = 2,
+             labeller = labeller(resolution = new.label)) + 
+  labs(x = 'Year', y = 'Kelp Density') + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5, face = 'bold'),
+        axis.title.x = element_text(face = 'bold'),
+        axis.text.y = element_text(face = 'bold'),
+        axis.title.y = element_text(face = 'bold'),
+        strip.text = element_text(face = 'bold'),
+        strip.background = element_rect(colour = 'black', fill = 'white'),
+        panel.grid.major.x = element_blank(),
+        text = element_text(size = 20)) 
+```
+
+```{r, fig.width=6, fig.height=4}
+## Plot
+
+# put all data frames into list
+df.list <- list(kelp.density, kelp.area, obs.density)
+# merge all data frames together
+df <- df.list %>% reduce(full_join, by = 'year')
+
+factor <- 12
+new.label <- c('120' = '120x120', '300' = '300x300', 
+               '900' = '900x900', '1500' = '1500x1500')
+
+ggplot(df, aes(x = year, y = fit*factor)) + 
+  geom_bar(stat = 'identity', color = 'black', alpha = 0.5, 
+           position = position_dodge(), fill = 'skyblue') +
+  geom_errorbar(aes(ymin = (fit - se.fit)*factor, ymax = (fit + se.fit)*factor), 
+                width = 0.5, position = position_dodge(0.9)) +
+  geom_pointrange(aes(x = year, y = mean.area, 
+                      ymin = mean.area - se.area, ymax = mean.area + se.area),
+                  alpha = 1, size = 0.5, color = 'red') + 
+  geom_line(aes(x = year, y = mean.area, group = 1), color = 'red') +
+  scale_y_continuous(name = 'Kelp Area', 
+                     sec.axis = sec_axis(~. / factor, name = 'Kelp Density')) + 
+  facet_wrap(. ~ resolution, nrow = 2, ncol = 2,
+             labeller = labeller(resolution = new.label)) + 
+  labs(x = 'Year') + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5, face = 'bold'),
+        axis.title.x = element_text(face = 'bold'),
+        axis.text.y.left = element_text(color = 'red', face = 'bold'),
+        axis.title.y.left = element_text(color = 'red', face = 'bold'),
+        axis.text.y.right = element_text(color = 'skyblue', face = 'bold'),
+        axis.title.y.right = element_text(color = 'skyblue', face = 'bold', vjust = 2),
+        strip.text = element_text(face = 'bold'),
+        strip.background = element_rect(colour = 'black', fill = 'white'),
+        panel.grid.major.x = element_blank(),
+        legend.position = 'bottom',
+        legend.text = element_text(face = 'bold'),
+        text = element_text(size = 20)) 
+```
+
+## Figure 2
+
+```{r}
+# Compare spatial predictions of kelp to "in situ" survey data. Compare each year 
+# and location for 150, 300, 600, 900 resolutions.
+
+## Extraction
+
+# Extract the predicted $log$ kelps density of every year (2004 - 2021) for each 
+# site in the North Coast.
+
+# read and transform the observed data to the log scale
+df <- read.csv(paste(d.dir, 
+                     'RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp.csv', 
+                     sep = '/')) %>%
+  dplyr::select(site_name, year, transect, zone, latitude, longitude, den_NERLUE) %>%
+  mutate_at(vars(year, transect, zone, site_name), list(as.factor)) %>%
+  mutate(log_den_NERLUE = log(den_NERLUE)) 
+
+# Note that $\log(0)$ returns -Inf. How to deal with $\log(0)$?
+
+df$log_den_NERLUE <- replace(df$log_den_NERLUE, df$log_den_NERLUE == -Inf, 0)
+
+# Calculate the mean and standard error of kelps density of every year for each 
+# site by zone (INNER/OUTER).
+
+obs <- df %>% 
+  group_by(site_name, year, zone) %>%
+  summarise_at(vars(log_den_NERLUE), list(mean = mean, se = std.error), na.rm = TRUE) %>%
+  pivot_wider(names_from = zone, values_from = c(mean, se))
+
+# Extract the predicted $log$ kelps density of every year for each site at different
+# resolutions.
+
+## Comparison
+
+# kelp density predictions at 120m resolution
+pred_120m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_120m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_120m <- left_join(pred_120m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+
+# kelp density predictions at 300m resolution
+pred_300m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_300m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_300m <- left_join(pred_300m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+
+# kelp density predictions at 900m resolution
+pred_900m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_900m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_900m <- left_join(pred_900m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+
+# kelp density predictions at 1500m resolution
+pred_1500m <- read.csv(paste(d.dir, 'NC_kelp_density_predictions_1500m.csv', sep ='/')) %>%
+  mutate_at(vars(year, site_name), list(as.factor))
+
+kelp_data_1500m <- left_join(pred_1500m, obs, by = c('site_name', 'year')) %>%
+  group_by(site_name) %>%
+  arrange(year, .by_group = TRUE) %>%
+  relocate(fit, .after = last_col())
+
+res <- c(120, 300, 900, 1500)
+
+kelp_longer_300m <- kelp_data_300m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(300))
+
+kelp_longer_900m <- kelp_data_900m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(900))
+
+kelp_longer_1500m <- kelp_data_1500m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(1500))
+
+kelp_longer_120m <- kelp_data_120m %>%
+  dplyr::select(-c(longitude, latitude)) %>%
+  pivot_longer(
+    -c('site_name', 'year', 'fit'),
+    names_to = c('.value', 'zone'),
+    names_sep = '_'
+    ) %>%
+  mutate(resolution = as.factor(120))
+
+kelp_longer <- rbind(kelp_longer_120m, kelp_longer_300m, 
+                     kelp_longer_900m, kelp_longer_1500m)
+```
+
+```{r, fig.width=7, fig.height=5}
+## Plotting
+
+# Plot log of kelps density vs year for each site at different resolutions.
+
+plot <- function(site) {
+  plot <- kelp_longer %>% 
+    filter(site_name == site) %>%
+    ggplot() + 
+    geom_pointrange(aes(
+      x = year, y = mean, group = zone, color = zone, 
+      ymin = mean - se, ymax = mean + se
+      ), alpha = 1, size = 0.5) + 
+    geom_bar(aes(x = year, y = fit, 
+                 fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')), 
+             stat = 'identity', position = 'dodge', alpha = 0.2) +
+    facet_wrap(. ~ resolution, nrow = 2, ncol = 2, 
+               labeller = labeller(resolution = new.label)) + 
+    labs(x = 'Year', y = 'Kelp Density', colour = 'Zone',
+         title = paste0('Predicted and Observed Kelp Density \n for ', site), 
+         fill = 'Overpredicted') +
+    scale_colour_manual(values = c('blue', 'red')) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 60, vjust = 0.5, size = 20), 
+          axis.title.x = element_text(face = 'bold'),
+          axis.title.y = element_text(face = 'bold'),
+          legend.title = element_text(face = 'bold'),
+          strip.background = element_rect(colour = 'black', fill = 'lightgrey'),
+          panel.grid.major.x = element_blank(),
+          legend.position = 'bottom', legend.box = 'vertical',
+          plot.title = element_text(hjust = 0.5, vjust = 1),
+          text = element_text(size = 30)) 
+  print(plot)
+}
+
+plot('Van Damme')
+plot('Point Arena MPA (M2)')
+```
+
+## Figure 3
+
+```{r, fig.width=7, fig.height=5}
+## Plotting
+
+# set a directory
+r.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Landsat_rasters'
+d.dir <- here('data')
+# output
+o.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data/Landsat_rasters'
+
+# kelp density predictions at different resolution
+res <- c(120, 300, 900, 1500)
+
+# initialize an empty data frame
+kelp.density <- data.frame(site_name = character(),
+                           year = factor(),
+                           fit = numeric(),
+                           longitude = numeric(),
+                           latitude = numeric(),
+                           resolution = factor())
+
+for (i in res) {
+  data <- read.csv(paste(d.dir, paste0('NC_kelp_density_predictions_', i, 'm.csv'), sep ='/')) %>%
+    mutate_at(vars(year, site_name), list(as.factor)) %>%
+    mutate(resolution = factor(i))
+  kelp.density <- rbind(kelp.density, data)
+}
+
+# Landsat kelp area at different resolution
+
+# initialize an empty data frame
+kelp.area <- data.frame(site_name = character(),
+                           year = factor(),
+                           area = numeric(),
+                           resolution = factor())
+
+for (i in res) {
+  data <- read.csv(paste(o.dir, paste0('NC_mean_kelp_area_1984-2021_', i, 'm.csv'), sep ='/')) %>%
+    dplyr::select(-X) %>%
+    mutate_at(vars(year), list(as.factor)) %>%
+    mutate(resolution = factor(i))
+  kelp.area <- rbind(kelp.area, data)
+}
+
+kelp.area <- kelp.area %>%
+  filter(year %in% c(2004:2021))
+```
+
+```{r, fig.width=7, fig.height=5}
+plot.area <- function(site) {
+  max.kelp.area <- filter(kelp.area, site_name == site)$area %>% max(na.rm = TRUE)
+  max.kelp.density <- filter(kelp.density, site_name == site)$fit %>% max(na.rm = TRUE)
+  factor <- max.kelp.area / max.kelp.density
+  plot <- ggplot() + 
+    geom_bar(data = filter(kelp.density, site_name == site),
+             aes(x = year, y = fit * factor), stat = 'identity', 
+             position = 'dodge', color = 'black', fill = 'skyblue') +
+    labs(x = 'Year', 
+         title = paste0('Predicted Kelp Density and Kelp Area \n for ', site)) + 
+    geom_point(data = filter(kelp.area, site_name == site),
+               aes(x = year, y = area), size = 1, color = 'red') + 
+    geom_line(data = filter(kelp.area, site_name == site),
+              aes(x = year, y = area), color = 'red', size = 1, group = 1, na.rm = TRUE) + 
+    scale_y_continuous(name = 'Kelp Area',
+                       sec.axis = sec_axis(~. / factor, name = 'Predicted Kelp Density')) +
+    facet_wrap(. ~ resolution, nrow = 2, ncol = 2,
+               labeller = labeller(resolution = new.label)) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 60, vjust = 0.5, size = 20),
+          axis.title.x = element_text(face = 'bold'),
+          axis.text.y.left = element_text(color = 'red'),
+          axis.title.y.left = element_text(color = 'red', face = 'bold'),
+          axis.text.y.right = element_text(color = 'skyblue'),
+          axis.title.y.right = element_text(color = 'skyblue', face = 'bold', vjust = 1),
+          legend.title = element_text(face = 'bold'),
+          strip.text = element_text(face = 'bold'),
+          strip.background = element_rect(colour = 'black', fill = 'lightgrey'),
+          panel.grid.major.x = element_blank(),
+          plot.title = element_text(hjust = 0.5, vjust = 1),
+          text = element_text(size = 30))
+  print(plot)
+}
+
+plot.area('Van Damme')
+plot.area('Point Arena MPA (M2)')
+```

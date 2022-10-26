@@ -44,14 +44,81 @@ d.dir <- here('data')
 e.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors' 
 o.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data/Predictors'
 
-# purple sea urchins
+## purple sea urchins ----
+urch.dir <- paste(o.dir, 'urchins', 'log_sp_predictions', sep = '/')
+urchin <- paste(e.dir, 'urchins', 'log_sp_predictions', sep = '/')
 
-# nitrate
-max_nit <- rast(paste(e.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep = '/'))
+# load raster data
+u.files <- list.files(urchin, pattern = '.tif', full.name = TRUE) 
 
+# list names to load onto the Environment
+names.list <- list.files(urchin, pattern = '.tif$')
+names.list <- str_replace(names.list, '.tif$', '')
 
+# load csv files as a list
+tfiles <- lapply(u.files, rast)
 
-# wave height
+# stack them
+urchin.stack <- c()
 
-# orbital velocity
+# use do.call to create a raster otherwise it creates a list
+urchin.stack <- do.call('c', tfiles) # 18
+
+# agg/diagg
+# urchin.120 <- disagg(urchin.stack, fact = 2.5)
+# writeRaster(urchin.120, file.path(urch.dir, 'Log_Purple_Urchins_120m.tif'), overwrite = TRUE)
+# urchin.300 <- urchin.stack
+# writeRaster(urchin.300, file.path(urch.dir, 'Log_Purple_Urchins_300m.tif'), overwrite = TRUE)
+# urchin.900 <- aggregate(urchin.stack, fact = 3, fun = mean, na.rm = TRUE)
+# writeRaster(urchin.900, file.path(urch.dir, 'Log_Purple_Urchins_900m.tif'), overwrite = TRUE)
+# urchin.1500 <- aggregate(urchin.stack, fact = 5, fun = mean, na.rm = TRUE)
+# writeRaster(urchin.1500, file.path(urch.dir, 'Log_Purple_Urchins_1500m.tif'), overwrite = TRUE)
+
+## nitrate ---- 
+nit.dir <- paste(o.dir, 'Nitrate', sep = '/')
+max_nit <- rast(paste(e.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep = '/')) # 24
+
+# list names to load onto the Environment
+names.list <- list.files(urchin, pattern = '.tif$')
+names.list <- str_replace(names.list, '.tif$', '')
+
+# load csv files as a list
+tfiles <- lapply(u.files, rast)
+
+# stack them
+urchin.stack <- c()
+
+# use do.call to create a raster otherwise it creates a list
+urchin.stack <- do.call('c', tfiles)
+
+## wave height ----
+wave.dir <- paste(o.dir, 'waves', 'wh_max', sep = '/')
+whmax <- paste(e.dir, 'waves', 'wh_max', sep = '/')
+
+# list files in source
+n.files <- list.files(whmax, pattern = '.tif$', full.name = TRUE)
+
+# list names to load onto the Environment
+names.list <- list.files(whmax, pattern = '.tif$')
+names.list <- str_replace(names.list, '.tif$', '')
+
+# load csv files as a list
+tfiles <- lapply(n.files, rast) # this is a list
+
+# stack them
+whmax.stack <- c()
+
+# use do.call to create a raster otherwise it creates a list
+whmax.stack <- do.call('c', tfiles) # 18
+
+## orbital velocity ----
+ubr <-  rast(paste(e.dir, 'orbital_vel', 'UBR_Max_30m_NC.tif', sep = '/')) # 18
+```
+
+```{r}
+# read the .csv file
+site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/')) 
+# convert from .csv to .shp
+site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+
 ```

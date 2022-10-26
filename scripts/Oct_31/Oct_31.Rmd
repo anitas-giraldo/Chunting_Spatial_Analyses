@@ -39,6 +39,6 @@ rm(list = ls())
 # set a directory
 w.dir <- here()
 d.dir <- here('data')
-r.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data'
+pred.dir <- 
 
 ```

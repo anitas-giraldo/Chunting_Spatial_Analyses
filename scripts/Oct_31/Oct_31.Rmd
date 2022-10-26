@@ -1,0 +1,44 @@
+---
+title: "SURE Project"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      cache = T,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      fig.align = 'center')
+library(sp)
+library(sf)
+library(terra)
+library(raster)
+library(rgdal)
+library(pander)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(RColorBrewer)
+library(here)
+library(tidyverse)
+library(plotrix)
+```
+
+## Figure 1
+
+```{r}
+# clear environment
+rm(list = ls())
+
+# set a directory
+w.dir <- here()
+d.dir <- here('data')
+r.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data'
+
+```

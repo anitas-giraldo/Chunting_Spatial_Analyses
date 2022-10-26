@@ -30,7 +30,7 @@ library(tidyverse)
 library(plotrix)
 ```
 
-## Figure 1
+# Prepare predictor variables
 
 ```{r}
 # clear environment
@@ -39,6 +39,19 @@ rm(list = ls())
 # set a directory
 w.dir <- here()
 d.dir <- here('data')
-pred.dir <- 
 
+# env predictors
+e.dir <- '/Volumes/GoogleDrive/My Drive/SURE_Project/Spatial_data/Predictors' 
+o.dir <- '/Volumes/Chunting HD/Git_Repositories/Chunting_Spatial_Analyses/spatial_data/Predictors'
+
+# purple sea urchins
+
+# nitrate
+max_nit <- rast(paste(e.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep = '/'))
+
+
+
+# wave height
+
+# orbital velocity
 ```

@@ -168,7 +168,7 @@ site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/'))
 # convert from .csv to .shp
 site.shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
 
-data.120 <- data.frame(site_name = character(),
+data.120 <- data.frame(site_name = factor(),
                        year = factor(),
                        log_den_STRPURAD = numeric())
   
@@ -178,7 +178,7 @@ urchin.120 <- rast(paste(urch.dir, 'Log_Purple_Urchins_120m.tif', sep = '/'))
 for (i in 1:length(year)) {
   urch.rast <- urchin.120[[i]]
   urch.ext <- terra::extract(urch.rast, vect(site.shp$geometry)) %>%
-    mutate(site_name = site$site_name, year = as.factor(year[i]), .before = fit) %>%
+    mutate(site_name = as.factor(site$site_name), year = as.factor(year[i]), .before = fit) %>%
     dplyr::select(-ID) 
   data.120 <- rbind(data.120, setNames(urch.ext, names(data.120)))
 }
@@ -325,14 +325,15 @@ dat2 <- dat1 %>%
 
 ```{r}
 dat3 <- inner_join(data.120, dat2, by = c('site_name', 'year', 'zone'))
-df.120 <- dat3 %>% drop_na() # 147x8
+df.120 <- dat3 %>% drop_na() # 146x8
 
+# divide data into train and test
 # split data into a training set (75%), and a testing set (25%)
 inTraining <- createDataPartition(df.120$log_den_NERLUE, p = 0.75, list = FALSE)
 train.gam <- df.120[inTraining, ]
 test.gam <- df.120[-inTraining, ]
 
-# run gam
+# run GAM
 gam120 <- gam(formula = log_den_NERLUE ~ 
               s(log_den_STRPURAD, k = 5, bs = "cr") + # purple sea urchins
               s(Max_Monthly_Nitrate, k = 5, bs = "cr") + 
@@ -342,4 +343,66 @@ gam120 <- gam(formula = log_den_NERLUE ~
               s(year, bs = "re"), # discrete variables, categorical
               # random factor
               family = tw(), data = train.gam, method = 'REML')
+
+# check GAM
+gam120$aic
+gam120$deviance
+summary(gam120)
+gam.check(gam120)
+```
+
+```{r}
+# plot observed vs predicted
+
+# fit the data
+fits120 <- predict.gam(gam120, newdata = train.gam, type = 'response', se.fit = T)
+
+predicts.all <- train.gam %>%
+  data.frame(fits120) %>%
+  ungroup()
+
+library(ggpmisc)
+
+my.formula <- y ~ x
+
+p <- predicts.all %>%
+  ggplot(aes(x = fit, y = log_den_NERLUE)) + 
+  geom_smooth(method = 'lm', se = FALSE, color = 'black', formula = my.formula) + 
+  stat_poly_eq(
+    formula = my.formula,
+    aes(label = paste(..eq.label.., ..rr.label.., sep = '~~~')),
+    parse = TRUE
+  ) + 
+  geom_point() + 
+  labs(x = 'Predicted', y = 'Observed', title = 'N. luetkeana') + 
+  theme_bw()
+p
+```
+
+```{r}
+# plot observed vs predicted
+
+# fit the testing data
+fits120 <- predict.gam(gam120, newdata = test.gam, type = 'response', se.fit = T)
+
+predicts.all <- test.gam %>%
+  data.frame(fits120) %>%
+  ungroup()
+
+library(ggpmisc)
+
+my.formula <- y ~ x
+
+p <- predicts.all %>%
+  ggplot(aes(x = fit, y = log_den_NERLUE)) + 
+  geom_smooth(method = 'lm', se = FALSE, color = 'black', formula = my.formula) + 
+  stat_poly_eq(
+    formula = my.formula,
+    aes(label = paste(..eq.label.., ..rr.label.., sep = '~~~')),
+    parse = TRUE
+  ) + 
+  geom_point() + 
+  labs(x = 'Predicted', y = 'Observed', title = 'N. luetkeana') + 
+  theme_bw()
+p
 ```

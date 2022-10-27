@@ -78,18 +78,15 @@ urchin.stack <- do.call('c', tfiles) # 18
 nit.dir <- paste(o.dir, 'Nitrate', sep = '/')
 max_nit <- rast(paste(e.dir, 'Nitrate', 'Max_Monthly_Nitrate.tif', sep = '/')) # 24
 
-# list names to load onto the Environment
-names.list <- list.files(urchin, pattern = '.tif$')
-names.list <- str_replace(names.list, '.tif$', '')
-
-# load csv files as a list
-tfiles <- lapply(u.files, rast)
-
-# stack them
-urchin.stack <- c()
-
-# use do.call to create a raster otherwise it creates a list
-urchin.stack <- do.call('c', tfiles)
+# agg/diagg
+# nitrate.120 <- disagg(max_nit, fact = 45)
+# writeRaster(nitrate.120, file.path(nit.dir, 'Max_Monthly_Nitrate_120m.tif'), overwrite = TRUE)
+# nitrate.300 <- disagg(max_nit, fact = 18)
+# writeRaster(nitrate.300, file.path(nit.dir, 'Max_Monthly_Nitrate_300m.tif'), overwrite = TRUE)
+# nitrate.900 <- disagg(max_nit, fact = 6)
+# writeRaster(nitrate.900, file.path(nit.dir, 'Max_Monthly_Nitrate_900m.tif'), overwrite = TRUE)
+# nitrate.1500 <- disagg(max_nit, fact = 4)
+# writeRaster(nitrate.1500, file.path(nit.dir, 'Max_Monthly_Nitrate_1500m.tif'), overwrite = TRUE)
 
 ## wave height ----
 wave.dir <- paste(o.dir, 'waves', 'wh_max', sep = '/')
@@ -111,14 +108,67 @@ whmax.stack <- c()
 # use do.call to create a raster otherwise it creates a list
 whmax.stack <- do.call('c', tfiles) # 18
 
+# agg/diagg
+# whmax.120 <- disagg(whmax.stack, fact = 9)
+# writeRaster(whmax.120, file.path(wave.dir, 'wh_max_120m.tif'), overwrite = TRUE)
+# whmax.300 <- disagg(whmax.stack, fact = 4)
+# writeRaster(whmax.300, file.path(wave.dir, 'wh_max_300m.tif'), overwrite = TRUE)
+# whmax.900 <- whmax.stack
+# writeRaster(whmax.900, file.path(wave.dir, 'wh_max_900m.tif'), overwrite = TRUE)
+# whmax.1500 <- aggregate(whmax.stack, fact = 2, fun = mean, na.rm = TRUE)
+# writeRaster(whmax.1500, file.path(wave.dir, 'wh_max_1500m.tif'), overwrite = TRUE)
+
 ## orbital velocity ----
+ubr.dir <- paste(o.dir, 'orbital_vel', sep = '/')
 ubr <-  rast(paste(e.dir, 'orbital_vel', 'UBR_Max_30m_NC.tif', sep = '/')) # 18
+
+# agg/disagg
+# ubr.120 <- aggregate(ubr, fact = 4, fun = mean, na.rm = TRUE)
+# writeRaster(ubr.120, file.path(ubr.dir, 'UBR_Max_120m.tif'), overwrite = TRUE)
+# ubr.300 <- aggregate(ubr, fact = 10, fun = mean, na.rm = TRUE)
+# writeRaster(ubr.300, file.path(ubr.dir, 'UBR_Max_300m.tif'), overwrite = TRUE)
+# ubr.900 <- aggregate(ubr, fact = 30, fun = mean, na.rm = TRUE)
+# writeRaster(ubr.900, file.path(ubr.dir, 'UBR_Max_900m.tif'), overwrite = TRUE)
+# ubr.1500 <- aggregate(ubr, fact = 50, fun = mean, na.rm = TRUE)
+# writeRaster(ubr.1500, file.path(ubr.dir, 'UBR_Max_1500m.tif'), overwrite = TRUE)
 ```
 
 ```{r}
 # read the .csv file
 site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/')) 
 # convert from .csv to .shp
-site_shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
+site.shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
 
+data.120 <- data.frame(site_name = character(),
+                       year = factor(),
+                       log_den_STRPURAD = numeric())
+  
+year <- c(2004:2021)
+urchin.120 <- rast(paste(urch.dir, 'Log_Purple_Urchins_120m.tif', sep = '/')) 
+
+for (i in 1:length(year)) {
+  urch.rast <- urchin.120[[i]]
+  urch.ext <- terra::extract(urch.rast, vect(site.shp$geometry)) %>%
+    mutate(site_name = site$site_name, year = as.factor(year[i]), .before = fit) %>%
+    dplyr::select(-ID) 
+  data.120 <- rbind(data.120, setNames(urch.ext, names(data.120)))
+}
+
+max_nit.120 <- rast(paste(nit.dir, 'Max_Monthly_Nitrate_120m.tif', sep = '/')) 
+max_nit.120 <- max_nit.120[[-c(1:6)]] # remove years before 2004
+whmax.120 <- rast(paste(wave.dir, 'wh_max_120m.tif', sep = '/')) 
+
+nit.df <- data.frame(Max_Monthly_Nitrate = numeric())
+whmax.df <- data.frame(wh_max = numeric())
+for (i in 1:length(year)) {
+  nit.rast <- max_nit.120[[i]]
+  nit.ext <- terra::extract(nit.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  nit.df <- rbind(nit.df, setNames(nit.ext, names(nit.df)))
+  
+  whmax.rast <- whmax.120[[i]]
+  whmax.ext <- terra::extract(whmax.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  whmax.df <- rbind(whmax.df, setNames(whmax.ext, names(whmax.df)))
+}
 ```

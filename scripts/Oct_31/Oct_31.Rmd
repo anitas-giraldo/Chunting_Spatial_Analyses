@@ -167,59 +167,6 @@ ubr <- rast(paste(e.dir, 'orbital_vel', 'UBR_Max_30m_NC.tif', sep = '/')) # 18
 site <- read.csv(paste(d.dir, 'RCCA_North_Coast_sites.csv', sep = '/')) 
 # convert from .csv to .shp
 site.shp <- st_as_sf(site, coords = c('longitude', 'latitude'), crs = 'EPSG:4326')
-
-data.120 <- data.frame(site_name = factor(),
-                       year = factor(),
-                       log_den_STRPURAD = numeric())
-  
-year <- c(2004:2021)
-urchin.120 <- rast(paste(urch.dir, 'Log_Purple_Urchins_120m.tif', sep = '/')) 
-
-for (i in 1:length(year)) {
-  urch.rast <- urchin.120[[i]]
-  urch.ext <- terra::extract(urch.rast, vect(site.shp$geometry)) %>%
-    mutate(site_name = as.factor(site$site_name), year = as.factor(year[i]), .before = fit) %>%
-    dplyr::select(-ID) 
-  data.120 <- rbind(data.120, setNames(urch.ext, names(data.120)))
-}
-
-max_nit.120 <- rast(paste(nit.dir, 'Max_Monthly_Nitrate_120m.tif', sep = '/')) 
-max_nit.120 <- max_nit.120[[-c(1:6)]] # remove years before 2004
-whmax.120 <- rast(paste(wave.dir, 'wh_max_120m.tif', sep = '/')) 
-# ubr.120 <- rast(paste(ubr.dir, 'UBR_Max_120m.tif', sep = '/')) 
-# ubr.120 <- terra::project(ubr.120, 'epsg:4326')
-# writeRaster(ubr.120, file.path(ubr.dir, 'UBR_Max_120m_projected.tif'), overwrite = TRUE)
-ubr.120 <- rast(paste(ubr.dir, 'UBR_Max_120m_projected.tif', sep = '/')) 
-
-nit.df <- data.frame(Max_Monthly_Nitrate = numeric())
-whmax.df <- data.frame(wh_max = numeric())
-ubr.df <- data.frame(UBR_Max = numeric())
-for (i in 1:length(year)) {
-  nit.rast <- max_nit.120[[i]]
-  nit.ext <- terra::extract(nit.rast, vect(site.shp$geometry)) %>%
-    dplyr::select(-ID) 
-  nit.df <- rbind(nit.df, setNames(nit.ext, names(nit.df)))
-  
-  whmax.rast <- whmax.120[[i]]
-  whmax.ext <- terra::extract(whmax.rast, vect(site.shp$geometry)) %>%
-    dplyr::select(-ID) 
-  whmax.df <- rbind(whmax.df, setNames(whmax.ext, names(whmax.df)))
-  
-  ubr.rast <- ubr.120[[i]]
-  ubr.ext <- terra::extract(ubr.rast, vect(site.shp$geometry)) %>%
-    dplyr::select(-ID) 
-  ubr.df <- rbind(ubr.df, setNames(ubr.ext, names(ubr.df)))
-}
-```
-
-```{r}
-data.120 <- cbind(data.120, nit.df, whmax.df, ubr.df) 
-data.120 <- rbind(data.120, data.120)
-data.120['zone'] <- rep(c('INNER', 'OUTER'), each = nrow(data.120)/2) %>% as.factor()
-data.120 <- data.120 %>%
-  mutate(log_UBR_Max = log(UBR_Max)) %>%
-  dplyr::select(-UBR_Max) %>%
-  arrange(year, site_name, zone)
 ```
 
 ```{r}
@@ -317,21 +264,76 @@ dat1 <- df.nc %>%
   dplyr::select(-c(Mean_Monthly_NPP_Upwelling, Min_Monthly_NPP))
 
 dat2 <- dat1 %>%
-  dplyr::select(site_name, year, zone, log_den_NERLUE) %>%
-  group_by(site_name, year, zone) %>%
-  summarise(log_den_NERLUE = mean(log_den_NERLUE, na.rm = TRUE)) %>%
-  arrange(year, site_name)
+  dplyr::select(latitude, longitude, site_name, year, zone, log_den_NERLUE) 
+```
+
+## 120x120
+
+```{r}
+data.120 <- data.frame(site_name = factor(),
+                       year = factor(),
+                       log_den_STRPURAD = numeric())
+  
+year <- c(2004:2021)
+urchin.120 <- rast(paste(urch.dir, 'Log_Purple_Urchins_120m.tif', sep = '/')) 
+
+for (i in 1:length(year)) {
+  urch.rast <- urchin.120[[i]]
+  urch.ext <- terra::extract(urch.rast, vect(site.shp$geometry)) %>%
+    mutate(site_name = as.factor(site$site_name), year = as.factor(year[i]), .before = fit) %>%
+    dplyr::select(-ID) 
+  data.120 <- rbind(data.120, setNames(urch.ext, names(data.120)))
+}
+
+max_nit.120 <- rast(paste(nit.dir, 'Max_Monthly_Nitrate_120m.tif', sep = '/')) 
+max_nit.120 <- max_nit.120[[-c(1:6)]] # remove years before 2004
+whmax.120 <- rast(paste(wave.dir, 'wh_max_120m.tif', sep = '/')) 
+# ubr.120 <- rast(paste(ubr.dir, 'UBR_Max_120m.tif', sep = '/')) 
+# ubr.120 <- terra::project(ubr.120, 'epsg:4326')
+# writeRaster(ubr.120, file.path(ubr.dir, 'UBR_Max_120m_projected.tif'), overwrite = TRUE)
+ubr.120 <- rast(paste(ubr.dir, 'UBR_Max_120m_projected.tif', sep = '/')) 
+
+nit.df <- data.frame(Max_Monthly_Nitrate = numeric())
+whmax.df <- data.frame(wh_max = numeric())
+ubr.df <- data.frame(UBR_Max = numeric())
+for (i in 1:length(year)) {
+  nit.rast <- max_nit.120[[i]]
+  nit.ext <- terra::extract(nit.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  nit.df <- rbind(nit.df, setNames(nit.ext, names(nit.df)))
+  
+  whmax.rast <- whmax.120[[i]]
+  whmax.ext <- terra::extract(whmax.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  whmax.df <- rbind(whmax.df, setNames(whmax.ext, names(whmax.df)))
+  
+  ubr.rast <- ubr.120[[i]]
+  ubr.ext <- terra::extract(ubr.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  ubr.df <- rbind(ubr.df, setNames(ubr.ext, names(ubr.df)))
+}
 ```
 
 ```{r}
-dat3 <- inner_join(data.120, dat2, by = c('site_name', 'year', 'zone'))
-df.120 <- dat3 %>% drop_na() # 146x8
+data.120 <- cbind(data.120, nit.df, whmax.df, ubr.df) 
+df.120 <- data.120 %>%
+  mutate(log_UBR_Max = log(UBR_Max)) %>% # log transformation of UBR
+  dplyr::select(-UBR_Max)
+```
+
+```{r}
+dat.120 <- left_join(dat2, df.120, by = c('site_name', 'year'))
+
+# drop NAs
+dat2.120 <- dat.120 %>%
+  drop_na() # 434
 
 # divide data into train and test
 # split data into a training set (75%), and a testing set (25%)
-inTraining <- createDataPartition(df.120$log_den_NERLUE, p = 0.75, list = FALSE)
-train.gam <- df.120[inTraining, ]
-test.gam <- df.120[-inTraining, ]
+set.seed(110122)
+inTraining <- createDataPartition(dat2.120$log_den_NERLUE, p = 0.75, list = FALSE)
+train.120 <- dat2.120[inTraining, ]
+test.120 <- dat2.120[-inTraining, ]
 
 # run GAM
 gam120 <- gam(formula = log_den_NERLUE ~ 
@@ -342,7 +344,7 @@ gam120 <- gam(formula = log_den_NERLUE ~
               s(site_name, zone, bs = "re") + # zone is nested within site
               s(year, bs = "re"), # discrete variables, categorical
               # random factor
-              family = tw(), data = train.gam, method = 'REML')
+              family = tw(), data = train.120, method = 'REML')
 
 # check GAM
 gam120$aic
@@ -354,10 +356,10 @@ gam.check(gam120)
 ```{r}
 # plot observed vs predicted
 
-# fit the data
-fits120 <- predict.gam(gam120, newdata = train.gam, type = 'response', se.fit = T)
+# fit the testing data
+fits120 <- predict.gam(gam120, newdata = test.120, type = 'response', se.fit = T)
 
-predicts.all <- train.gam %>%
+predicts.all <- test.120 %>%
   data.frame(fits120) %>%
   ungroup()
 
@@ -379,14 +381,100 @@ p <- predicts.all %>%
 p
 ```
 
+## 300x300
+
+```{r}
+data.300 <- data.frame(site_name = factor(),
+                       year = factor(),
+                       log_den_STRPURAD = numeric())
+  
+year <- c(2004:2021)
+urchin.300 <- rast(paste(urch.dir, 'Log_Purple_Urchins_300m.tif', sep = '/')) 
+
+for (i in 1:length(year)) {
+  urch.rast <- urchin.300[[i]]
+  urch.ext <- terra::extract(urch.rast, vect(site.shp$geometry)) %>%
+    mutate(site_name = as.factor(site$site_name), year = as.factor(year[i]), .before = fit) %>%
+    dplyr::select(-ID) 
+  data.300 <- rbind(data.300, setNames(urch.ext, names(data.300)))
+}
+
+max_nit.300 <- rast(paste(nit.dir, 'Max_Monthly_Nitrate_300m.tif', sep = '/')) 
+max_nit.300 <- max_nit.300[[-c(1:6)]] # remove years before 2004
+whmax.300 <- rast(paste(wave.dir, 'wh_max_300m.tif', sep = '/')) 
+# ubr.300 <- rast(paste(ubr.dir, 'UBR_Max_300m.tif', sep = '/'))
+# ubr.300 <- terra::project(ubr.300, 'epsg:4326')
+# writeRaster(ubr.300, file.path(ubr.dir, 'UBR_Max_300m_projected.tif'), overwrite = TRUE)
+ubr.300 <- rast(paste(ubr.dir, 'UBR_Max_300m_projected.tif', sep = '/')) 
+
+nit.df <- data.frame(Max_Monthly_Nitrate = numeric())
+whmax.df <- data.frame(wh_max = numeric())
+ubr.df <- data.frame(UBR_Max = numeric())
+for (i in 1:length(year)) {
+  nit.rast <- max_nit.300[[i]]
+  nit.ext <- terra::extract(nit.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  nit.df <- rbind(nit.df, setNames(nit.ext, names(nit.df)))
+  
+  whmax.rast <- whmax.300[[i]]
+  whmax.ext <- terra::extract(whmax.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  whmax.df <- rbind(whmax.df, setNames(whmax.ext, names(whmax.df)))
+  
+  ubr.rast <- ubr.300[[i]]
+  ubr.ext <- terra::extract(ubr.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  ubr.df <- rbind(ubr.df, setNames(ubr.ext, names(ubr.df)))
+}
+```
+
+```{r}
+data.300 <- cbind(data.300, nit.df, whmax.df, ubr.df) 
+df.300 <- data.300 %>%
+  mutate(log_UBR_Max = log(UBR_Max)) %>% # log transformation of UBR
+  dplyr::select(-UBR_Max)
+```
+
+```{r}
+dat.300 <- left_join(dat2, df.300, by = c('site_name', 'year'))
+
+# drop NAs
+dat2.300 <- dat.300 %>%
+  drop_na() # 434
+
+# divide data into train and test
+# split data into a training set (75%), and a testing set (25%)
+set.seed(110122)
+inTraining <- createDataPartition(dat2.300$log_den_NERLUE, p = 0.75, list = FALSE)
+train.300 <- dat2.300[inTraining, ]
+test.300 <- dat2.300[-inTraining, ]
+
+# run GAM
+gam300 <- gam(formula = log_den_NERLUE ~ 
+              s(log_den_STRPURAD, k = 5, bs = "cr") + # purple sea urchins
+              s(Max_Monthly_Nitrate, k = 5, bs = "cr") + 
+              s(wh_max, k = 5, bs = "cr") + # wave height
+              s(log_UBR_Max, k = 4, bs = "cr") + # orbital velocity, continuous variables
+              s(site_name, zone, bs = "re") + # zone is nested within site
+              s(year, bs = "re"), # discrete variables, categorical
+              # random factor
+              family = tw(), data = train.300, method = 'REML')
+
+# check GAM
+gam300$aic
+gam300$deviance
+summary(gam300)
+gam.check(gam300)
+```
+
 ```{r}
 # plot observed vs predicted
 
 # fit the testing data
-fits120 <- predict.gam(gam120, newdata = test.gam, type = 'response', se.fit = T)
+fits300 <- predict.gam(gam300, newdata = test.300, type = 'response', se.fit = T)
 
-predicts.all <- test.gam %>%
-  data.frame(fits120) %>%
+predicts.all <- test.300 %>%
+  data.frame(fits300) %>%
   ungroup()
 
 library(ggpmisc)
@@ -405,4 +493,244 @@ p <- predicts.all %>%
   labs(x = 'Predicted', y = 'Observed', title = 'N. luetkeana') + 
   theme_bw()
 p
+```
+
+## 900x900
+
+```{r}
+data.900 <- data.frame(site_name = factor(),
+                       year = factor(),
+                       log_den_STRPURAD = numeric())
+  
+year <- c(2004:2021)
+urchin.900 <- rast(paste(urch.dir, 'Log_Purple_Urchins_900m.tif', sep = '/')) 
+
+for (i in 1:length(year)) {
+  urch.rast <- urchin.900[[i]]
+  urch.ext <- terra::extract(urch.rast, vect(site.shp$geometry)) %>%
+    mutate(site_name = as.factor(site$site_name), year = as.factor(year[i]), .before = fit) %>%
+    dplyr::select(-ID) 
+  data.900 <- rbind(data.900, setNames(urch.ext, names(data.900)))
+}
+
+max_nit.900 <- rast(paste(nit.dir, 'Max_Monthly_Nitrate_900m.tif', sep = '/')) 
+max_nit.900 <- max_nit.900[[-c(1:6)]] # remove years before 2004
+whmax.900 <- rast(paste(wave.dir, 'wh_max_900m.tif', sep = '/')) 
+# ubr.900 <- rast(paste(ubr.dir, 'UBR_Max_900m.tif', sep = '/'))
+# ubr.900 <- terra::project(ubr.900, 'epsg:4326')
+# writeRaster(ubr.900, file.path(ubr.dir, 'UBR_Max_900m_projected.tif'), overwrite = TRUE)
+ubr.900 <- rast(paste(ubr.dir, 'UBR_Max_900m_projected.tif', sep = '/')) 
+
+nit.df <- data.frame(Max_Monthly_Nitrate = numeric())
+whmax.df <- data.frame(wh_max = numeric())
+ubr.df <- data.frame(UBR_Max = numeric())
+for (i in 1:length(year)) {
+  nit.rast <- max_nit.900[[i]]
+  nit.ext <- terra::extract(nit.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  nit.df <- rbind(nit.df, setNames(nit.ext, names(nit.df)))
+  
+  whmax.rast <- whmax.900[[i]]
+  whmax.ext <- terra::extract(whmax.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  whmax.df <- rbind(whmax.df, setNames(whmax.ext, names(whmax.df)))
+  
+  ubr.rast <- ubr.900[[i]]
+  ubr.ext <- terra::extract(ubr.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  ubr.df <- rbind(ubr.df, setNames(ubr.ext, names(ubr.df)))
+}
+```
+
+```{r}
+data.900 <- cbind(data.900, nit.df, whmax.df, ubr.df) 
+df.900 <- data.900 %>%
+  mutate(log_UBR_Max = log(UBR_Max)) %>% # log transformation of UBR
+  dplyr::select(-UBR_Max)
+```
+
+```{r}
+dat.900 <- left_join(dat2, df.900, by = c('site_name', 'year'))
+
+# drop NAs
+dat2.900 <- dat.900 %>%
+  drop_na() # 434
+
+# divide data into train and test
+# split data into a training set (75%), and a testing set (25%)
+set.seed(110122)
+inTraining <- createDataPartition(dat2.900$log_den_NERLUE, p = 0.75, list = FALSE)
+train.900 <- dat2.900[inTraining, ]
+test.900 <- dat2.900[-inTraining, ]
+
+# run GAM
+gam900 <- gam(formula = log_den_NERLUE ~ 
+              s(log_den_STRPURAD, k = 5, bs = "cr") + # purple sea urchins
+              s(Max_Monthly_Nitrate, k = 5, bs = "cr") + 
+              s(wh_max, k = 5, bs = "cr") + # wave height
+              s(log_UBR_Max, k = 4, bs = "cr") + # orbital velocity, continuous variables
+              s(site_name, zone, bs = "re") + # zone is nested within site
+              s(year, bs = "re"), # discrete variables, categorical
+              # random factor
+              family = tw(), data = train.900, method = 'REML')
+
+# check GAM
+gam900$aic
+gam900$deviance
+summary(gam900)
+gam.check(gam900)
+```
+
+```{r}
+# plot observed vs predicted
+
+# fit the testing data
+fits900 <- predict.gam(gam900, newdata = test.900, type = 'response', se.fit = T)
+
+predicts.all <- test.900 %>%
+  data.frame(fits900) %>%
+  ungroup()
+
+library(ggpmisc)
+
+my.formula <- y ~ x
+
+p <- predicts.all %>%
+  ggplot(aes(x = fit, y = log_den_NERLUE)) + 
+  geom_smooth(method = 'lm', se = FALSE, color = 'black', formula = my.formula) + 
+  stat_poly_eq(
+    formula = my.formula,
+    aes(label = paste(..eq.label.., ..rr.label.., sep = '~~~')),
+    parse = TRUE
+  ) + 
+  geom_point() + 
+  labs(x = 'Predicted', y = 'Observed', title = 'N. luetkeana') + 
+  theme_bw()
+p
+```
+
+## 1500x1500
+
+```{r}
+data.1500 <- data.frame(site_name = factor(),
+                       year = factor(),
+                       log_den_STRPURAD = numeric())
+  
+year <- c(2004:2021)
+urchin.1500 <- rast(paste(urch.dir, 'Log_Purple_Urchins_1500m.tif', sep = '/')) 
+
+for (i in 1:length(year)) {
+  urch.rast <- urchin.1500[[i]]
+  urch.ext <- terra::extract(urch.rast, vect(site.shp$geometry)) %>%
+    mutate(site_name = as.factor(site$site_name), year = as.factor(year[i]), .before = fit) %>%
+    dplyr::select(-ID) 
+  data.1500 <- rbind(data.1500, setNames(urch.ext, names(data.1500)))
+}
+
+max_nit.1500 <- rast(paste(nit.dir, 'Max_Monthly_Nitrate_1500m.tif', sep = '/')) 
+max_nit.1500 <- max_nit.1500[[-c(1:6)]] # remove years before 2004
+whmax.1500 <- rast(paste(wave.dir, 'wh_max_1500m.tif', sep = '/')) 
+# ubr.1500 <- rast(paste(ubr.dir, 'UBR_Max_1500m.tif', sep = '/'))
+# ubr.1500 <- terra::project(ubr.1500, 'epsg:4326')
+# writeRaster(ubr.1500, file.path(ubr.dir, 'UBR_Max_1500m_projected.tif'), overwrite = TRUE)
+ubr.1500 <- rast(paste(ubr.dir, 'UBR_Max_1500m_projected.tif', sep = '/')) 
+
+nit.df <- data.frame(Max_Monthly_Nitrate = numeric())
+whmax.df <- data.frame(wh_max = numeric())
+ubr.df <- data.frame(UBR_Max = numeric())
+for (i in 1:length(year)) {
+  nit.rast <- max_nit.1500[[i]]
+  nit.ext <- terra::extract(nit.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  nit.df <- rbind(nit.df, setNames(nit.ext, names(nit.df)))
+  
+  whmax.rast <- whmax.1500[[i]]
+  whmax.ext <- terra::extract(whmax.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  whmax.df <- rbind(whmax.df, setNames(whmax.ext, names(whmax.df)))
+  
+  ubr.rast <- ubr.1500[[i]]
+  ubr.ext <- terra::extract(ubr.rast, vect(site.shp$geometry)) %>%
+    dplyr::select(-ID) 
+  ubr.df <- rbind(ubr.df, setNames(ubr.ext, names(ubr.df)))
+}
+```
+
+```{r}
+data.1500 <- cbind(data.1500, nit.df, whmax.df, ubr.df) 
+df.1500 <- data.1500 %>%
+  mutate(log_UBR_Max = log(UBR_Max)) %>% # log transformation of UBR
+  dplyr::select(-UBR_Max)
+```
+
+```{r}
+dat.1500 <- left_join(dat2, df.1500, by = c('site_name', 'year'))
+
+# drop NAs
+dat2.1500 <- dat.1500 %>%
+  drop_na() # 434
+
+# divide data into train and test
+# split data into a training set (75%), and a testing set (25%)
+set.seed(110122)
+inTraining <- createDataPartition(dat2.1500$log_den_NERLUE, p = 0.75, list = FALSE)
+train.1500 <- dat2.1500[inTraining, ]
+test.1500 <- dat2.1500[-inTraining, ]
+
+# run GAM
+gam1500 <- gam(formula = log_den_NERLUE ~ 
+              s(log_den_STRPURAD, k = 5, bs = "cr") + # purple sea urchins
+              s(Max_Monthly_Nitrate, k = 5, bs = "cr") + 
+              s(wh_max, k = 5, bs = "cr") + # wave height
+              s(log_UBR_Max, k = 4, bs = "cr") + # orbital velocity, continuous variables
+              s(site_name, zone, bs = "re") + # zone is nested within site
+              s(year, bs = "re"), # discrete variables, categorical
+              # random factor
+              family = tw(), data = train.1500, method = 'REML')
+
+# check GAM
+gam1500$aic
+gam1500$deviance
+summary(gam1500)
+gam.check(gam1500)
+```
+
+```{r}
+# plot observed vs predicted
+
+# fit the testing data
+fits1500 <- predict.gam(gam1500, newdata = test.1500, type = 'response', se.fit = T)
+
+predicts.all <- test.1500 %>%
+  data.frame(fits1500) %>%
+  ungroup()
+
+library(ggpmisc)
+
+my.formula <- y ~ x
+
+p <- predicts.all %>%
+  ggplot(aes(x = fit, y = log_den_NERLUE)) + 
+  geom_smooth(method = 'lm', se = FALSE, color = 'black', formula = my.formula) + 
+  stat_poly_eq(
+    formula = my.formula,
+    aes(label = paste(..eq.label.., ..rr.label.., sep = '~~~')),
+    parse = TRUE
+  ) + 
+  geom_point() + 
+  labs(x = 'Predicted', y = 'Observed', title = 'N. luetkeana') + 
+  theme_bw()
+p
+```
+
+## Summary
+
+```{r}
+result <- data.frame(resolution = factor(c(120, 300, 900, 1500)),
+                     R2.train = c(0.641, 0.63, 0.539, 0.625),
+                     deviance = c(gam120$deviance, gam300$deviance, 
+                                  gam900$deviance, gam1500$deviance),
+                     AIC = c(gam120$aic, gam300$aic, gam900$aic, gam1500$aic),
+                     R2.test = c(0.47, 0.57, 0.51, 0.52))
+result
 ```

@@ -85,6 +85,9 @@ fit <- ~ gam(formula = log_den_NERLUE ~
              family = tw(), data = .x, method = 'REML')
 null <- ~ gam(formula = log_den_NERLUE ~ 1, family = tw(), data = .x, method = 'REML')
 
+# get empty df
+overall.summary <- data.frame()
+
 for (i in 1:4) {
   filename <- paste0("RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp_", res[i], "m.csv")
   
@@ -96,7 +99,7 @@ for (i in 1:4) {
   set.seed(123)
   
   # divide data in k folds  ----
-  n_folds <- 4
+  n_folds <- 25
   folds <- crossv_kfold(df, k = n_folds)
   
   # run model on each set of training data ----
@@ -143,17 +146,16 @@ for (i in 1:4) {
 
     # calculate mean and standard error per k fold model
     mean.res <- mean(all.res$log_den_NERLUE)
-    se.res <- sd(all.res$log_den_NERLUE) / sqrt(length(all.res$log_den_NERLUE))
 
     # calculate R-squared per k fold model
     all.rsq <- var(pred_values) / var(obs_values) 
     
-    resid.df1 <- cbind(mean.res, se.res, all.rsq)
+    resid.df1 <- cbind(mean.res, all.rsq)
     resid.df <- rbind(resid.df, resid.df1)
   }
   
   names(all.resid.df) <- c('pred_values', 'obs_values', 'residuals')
-  names(resid.df) <- c('mean_residuals', 'SE_residuals', 'mean_R.Sqr')
+  names(resid.df) <- c('mean_residuals', 'mean_R.Sqr')
   row.names(resid.df) <- paste(1:n_folds)
   
   # merge dev.exp and residuals ----
@@ -189,17 +191,16 @@ for (i in 1:4) {
 
     # calculate mean and standard error per k fold model
     mean.res <- mean(all.res$log_den_NERLUE)
-    se.res <- sd(all.res$log_den_NERLUE) / sqrt(length(all.res$log_den_NERLUE))
 
     # calculate R-squared per k fold model
     all.rsq <- var(pred_values) / var(obs_values)
 
-    resid.df1 <- cbind(mean.res, se.res, all.rsq)
+    resid.df1 <- cbind(mean.res, all.rsq)
     resid.df.test <- rbind(resid.df.test, resid.df1)
   }
   
   names(all.resid.df.test) <- c('pred_values_test', 'obs_values_test', 'residuals_test')
-  names(resid.df.test) <- c('mean_residuals_test', 'SE_residuals_test', 'mean_R.Sqr_test')
+  names(resid.df.test) <- c('mean_residuals_test', 'mean_R.Sqr_test')
   
   # merge residuals from predicted and deviance explained ----
   summary.df <- cbind(summary.df, resid.df.test)
@@ -218,19 +219,18 @@ for (i in 1:4) {
     relocate(id) %>%
     dplyr::select(-c(k.fold, dev.null, dev.full)) %>%
     mutate_at(vars(dev.exp), list(as.numeric)) %>%
-    mutate(SE_R.Sqr = sd(mean_R.Sqr) / sqrt(length(mean_R.Sqr)),
-           SE_R.Sqr_test = sd(mean_R.Sqr_test) / sqrt(length(mean_R.Sqr_test))) %>%
-    pivot_longer(cols = dev.exp:SE_R.Sqr_test, names_to = 'summary_stat', values_to = 'values') %>%
+    pivot_longer(cols = dev.exp:rmse, names_to = 'summary_stat', values_to = 'values') %>%
     mutate_at(vars(id, summary_stat), list(as.factor)) %>%
     group_by(summary_stat) %>%
-    summarise(mean_stat = mean(values)) %>%
+    summarise(mean_stat = mean(values), se_stat = sd(values)/sqrt(n_folds)) %>%
     mutate(resolution = res[i]) %>%
     mutate_at(vars(resolution), list(as.factor))
 
   # add to overall summary ----
-  overall.summary <- data.frame()
   overall.summary <- rbind(overall.summary, summary.df2)
 }
-  
+
+overall.summary
+# write.csv(overall.summary, file.path(d.dir, 'North_Coast_CV_Overall_Summary.csv'), row.names = FALSE)
 ```
 

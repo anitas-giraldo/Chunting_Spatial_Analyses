@@ -1,0 +1,98 @@
+---
+title: "SURE Project"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      cache = T,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      fig.align = 'center')
+library(Amelia) # to map missing data
+library(here)
+library(tidyverse)
+library(dplyr)
+library(ggplot2) 
+library(caret) ## For model fitting and evaluation
+library(RANN)
+library(corrplot)
+library(rsample)
+library(yardstick) ## to evaluate a model
+library(visreg)  ## For visualizing regression models
+library(plotROC) ## For constructing ROC curves
+library(mgcv)    ## For fitting GAM models
+library(kernlab) ## Contains an example dataset
+library(glmnet)  ## For fitting regularized models
+library(pROC)
+library(ROCR)
+library(car)
+library(OddsPlotty) # to plot from the caret package
+library(tidymodels) # modern version of caret
+library(cutpointr) # Find optimal cutoff point for binary classification
+library(bestglm) # Best subset GLM : The function bestglm selects the best 
+                 # subset of inputs for the glm family
+library(MASS) # Stepwise regression
+library(reshape2)
+library(sp)
+library(sf)
+library(rgdal)
+library(raster) 
+library(terra)
+library(RColorBrewer)
+# library(geobr)
+library(ggspatial)
+library(ggrepel)
+library(forcats)
+library(beepr)
+library(gridExtra)
+library(FSSgam)
+library(viridis)
+library(hrbrthemes)
+library(gplots)
+library(beepr)
+library(stringr)
+library(purrr)
+library(modelr)
+library(broom)
+library(tidyr)
+```
+
+```{r}
+rm(list = ls())
+
+# set a directory
+w.dir <- here()
+d.dir <- here('data')
+```
+
+```{r}
+overall.summary <- read.csv(paste(d.dir, 'North_Coast_cv_summary_stats.csv', sep = '/')) %>%
+  mutate_at(vars(resolution), list(as.factor))
+head(overall.summary)
+```
+
+```{r}
+p <- ggplot(overall.summary %>% 
+              dplyr::filter(summary_stat != 'mean_R.Sqr_test' & summary_stat != 'mean_residuals'),
+            aes(x = resolution, y = mean_stat, color = resolution)) + 
+  geom_point(size = 5) + 
+  facet_wrap(~ summary_stat, scales = 'free') + 
+  scale_color_viridis(discrete = T) + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, h = 1))
+
+p
+```
+
+```{r}
+```
+
+
+
+

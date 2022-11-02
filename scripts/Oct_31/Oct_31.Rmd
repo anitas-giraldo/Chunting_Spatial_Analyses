@@ -323,6 +323,7 @@ df.120 <- data.120 %>%
 
 ```{r}
 dat.120 <- left_join(dat2, df.120, by = c('site_name', 'year'))
+# write.csv(dat.120, file.path(d.dir, '/RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp_120m.csv'), row.names = FALSE)
 
 # drop NAs
 dat2.120 <- dat.120 %>%
@@ -437,6 +438,7 @@ df.300 <- data.300 %>%
 
 ```{r}
 dat.300 <- left_join(dat2, df.300, by = c('site_name', 'year'))
+# write.csv(dat.300, file.path(d.dir, '/RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp_300m.csv'), row.names = FALSE)
 
 # drop NAs
 dat2.300 <- dat.300 %>%
@@ -551,6 +553,7 @@ df.900 <- data.900 %>%
 
 ```{r}
 dat.900 <- left_join(dat2, df.900, by = c('site_name', 'year'))
+# write.csv(dat.900, file.path(d.dir, '/RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp_900m.csv'), row.names = FALSE)
 
 # drop NAs
 dat2.900 <- dat.900 %>%
@@ -665,6 +668,7 @@ df.1500 <- data.1500 %>%
 
 ```{r}
 dat.1500 <- left_join(dat2, df.1500, by = c('site_name', 'year'))
+# write.csv(dat.1500, file.path(d.dir, '/RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp_1500m.csv'), row.names = FALSE)
 
 # drop NAs
 dat2.1500 <- dat.1500 %>%

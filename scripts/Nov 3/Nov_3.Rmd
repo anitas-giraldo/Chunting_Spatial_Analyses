@@ -1,0 +1,236 @@
+---
+title: "SURE Project"
+author: ""
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+graphics: yes
+output: pdf_document
+urlcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T,
+                      cache = T,
+                      eval = T,
+                      message = F,
+                      warning = F,
+                      fig.align = 'center')
+library(Amelia) # to map missing data
+library(here)
+library(tidyverse)
+library(dplyr)
+library(ggplot2) 
+library(caret) ## For model fitting and evaluation
+library(RANN)
+library(corrplot)
+library(rsample)
+library(yardstick) ## to evaluate a model
+library(visreg)  ## For visualizing regression models
+library(plotROC) ## For constructing ROC curves
+library(mgcv)    ## For fitting GAM models
+library(kernlab) ## Contains an example dataset
+library(glmnet)  ## For fitting regularized models
+library(pROC)
+library(ROCR)
+library(car)
+library(OddsPlotty) # to plot from the caret package
+library(tidymodels) # modern version of caret
+library(cutpointr) # Find optimal cutoff point for binary classification
+library(bestglm) # Best subset GLM : The function bestglm selects the best 
+                 # subset of inputs for the glm family
+library(MASS) # Stepwise regression
+library(reshape2)
+library(sp)
+library(sf)
+library(rgdal)
+library(raster) 
+library(terra)
+library(RColorBrewer)
+# library(geobr)
+library(ggspatial)
+library(ggrepel)
+library(forcats)
+library(beepr)
+library(gridExtra)
+library(FSSgam)
+library(viridis)
+library(hrbrthemes)
+library(gplots)
+library(beepr)
+library(stringr)
+library(purrr)
+library(modelr)
+library(broom)
+library(tidyr)
+```
+
+```{r}
+rm(list = ls())
+
+# set a directory
+w.dir <- here()
+d.dir <- here('data')
+```
+
+```{r}
+res <- c(120, 300, 900, 1500)
+
+# define fitting functions ----
+fit <- ~ gam(formula = log_den_NERLUE ~ 
+               s(log_den_STRPURAD, k = 5, bs = "cr") + 
+               s(Max_Monthly_Nitrate, k = 5, bs = "cr") + 
+               s(wh_max, k = 5, bs = "cr") +
+               s(log_UBR_Max, k = 4, bs = "cr") + 
+               s(site_name, zone, bs = "re") + 
+               s(year, bs = "re"), 
+             family = tw(), data = .x, method = 'REML')
+null <- ~ gam(formula = log_den_NERLUE ~ 1, family = tw(), data = .x, method = 'REML')
+
+for (i in 1:4) {
+  filename <- paste0("RCCA_kelp_inverts_NC_depth-zones_wave_clim_temp_nit_subs_orbvel_npp_", res[i], "m.csv")
+  
+  # load data, and drop NAs ----
+  df <- read.csv(paste(d.dir, filename, sep ='/')) %>%
+    mutate_at(vars(site_name, year, zone), list(as.factor)) %>%
+    drop_na()
+  
+  set.seed(123)
+  
+  # divide data in k folds  ----
+  n_folds <- 4
+  folds <- crossv_kfold(df, k = n_folds)
+  
+  # run model on each set of training data ----
+  cv_mods <- folds %>%
+    mutate(train = map(train, as_tibble)) %>%
+    mutate(model = purrr::map(train, fit)) 
+  
+  # add the null model
+  cv_mods <- cv_mods %>%
+    mutate(train = map(train, as_tibble)) %>%
+    mutate(model.null = purrr::map(train, null)) 
+  
+  # calculate % deviance explained ----
+  
+  # get empty df
+  dev.exp.df <- data.frame()
+  
+  for (m in 1:n_folds) {
+    dev.null <- deviance(cv_mods$model.null[[m]])
+    dev.full <- deviance(cv_mods$model[[m]])
+    dev.exp <- (dev.null-dev.full) / dev.null
+    k.fold <- paste(m)
+    dev.row <- cbind(k.fold, dev.null, dev.full, dev.exp)
+    dev.exp.df <- rbind(dev.exp.df, dev.row)
+  }
+  
+  # calculate residuals ----
+  
+  # get empty dfs
+  resid.df <- data.frame()
+  all.resid.df <- data.frame()
+  
+  for (l in 1:n_folds) {
+    # get predicted and observed
+    pred_values <- cv_mods$model[[l]] %>% fitted()
+    obs_values <- cv_mods$train[[l]] %>% dplyr::select(log_den_NERLUE)
+    
+    # calculate residuals
+    all.res <- obs_values - pred_values # residuals
+
+    # merge in data frame
+    all.resid.df1 <- cbind(pred_values, obs_values = obs_values$log_den_NERLUE, all.res)
+    all.resid.df <- rbind(all.resid.df, all.resid.df1)
+
+    # calculate mean and standard error per k fold model
+    mean.res <- mean(all.res$log_den_NERLUE)
+    se.res <- sd(all.res$log_den_NERLUE) / sqrt(length(all.res$log_den_NERLUE))
+
+    # calculate R-squared per k fold model
+    all.rsq <- var(pred_values) / var(obs_values) 
+    
+    resid.df1 <- cbind(mean.res, se.res, all.rsq)
+    resid.df <- rbind(resid.df, resid.df1)
+  }
+  
+  names(all.resid.df) <- c('pred_values', 'obs_values', 'residuals')
+  names(resid.df) <- c('mean_residuals', 'SE_residuals', 'mean_R.Sqr')
+  row.names(resid.df) <- paste(1:n_folds)
+  
+  # merge dev.exp and residuals ----
+  summary.df <- cbind(dev.exp.df, resid.df)
+  
+  # predict on test data ----
+  
+  cv_mods <- cv_mods %>% 
+    mutate(predicted = map2(model, test, ~ augment(.x, newdata = .y))) 
+  
+  # extract relevant information from these predicted results ----
+  predicted <- cv_mods %>% 
+    mutate(predicted = map2(model, test, ~ augment(.x, newdata = .y))) %>%
+    unnest(predicted)
+  
+  # get residuals and R squared ----
+  
+  # get empty dfs
+  resid.df.test <- data.frame()
+  all.resid.df.test <- data.frame()
+  
+  for (n in 1:n_folds) {
+    # get predicted and observed
+    pred_values <- cv_mods$predicted[[n]] %>% dplyr::select(.fitted)
+    obs_values <- cv_mods$predicted[[n]] %>% dplyr::select(log_den_NERLUE)
+    
+    # calculate residuals
+    all.res <- obs_values - pred_values # residuals
+
+    # merge in data frame
+    all.resid.df1 <- cbind(pred_values, obs_values = obs_values$log_den_NERLUE, all.res)
+    all.resid.df.test <- rbind(all.resid.df.test, all.resid.df1)
+
+    # calculate mean and standard error per k fold model
+    mean.res <- mean(all.res$log_den_NERLUE)
+    se.res <- sd(all.res$log_den_NERLUE) / sqrt(length(all.res$log_den_NERLUE))
+
+    # calculate R-squared per k fold model
+    all.rsq <- var(pred_values) / var(obs_values)
+
+    resid.df1 <- cbind(mean.res, se.res, all.rsq)
+    resid.df.test <- rbind(resid.df.test, resid.df1)
+  }
+  
+  names(all.resid.df.test) <- c('pred_values_test', 'obs_values_test', 'residuals_test')
+  names(resid.df.test) <- c('mean_residuals_test', 'SE_residuals_test', 'mean_R.Sqr_test')
+  
+  # merge residuals from predicted and deviance explained ----
+  summary.df <- cbind(summary.df, resid.df.test)
+  
+  # calculate RMSE ----
+  rmse.folds <- cv_mods %>%
+    mutate(rmse = map2_dbl(model, test, rmse)) %>%
+    dplyr::select(.id, rmse) 
+  
+  # merge RMSE with deviance explained ----
+  summary.df <- cbind(summary.df, rmse.folds)
+  
+  # summary submodel statistics ----
+  summary.df2 <- summary.df %>%
+    rename(id = .id) %>%
+    relocate(id) %>%
+    dplyr::select(-c(k.fold, dev.null, dev.full)) %>%
+    mutate_at(vars(dev.exp), list(as.numeric)) %>%
+    mutate(SE_R.Sqr = sd(mean_R.Sqr) / sqrt(length(mean_R.Sqr)),
+           SE_R.Sqr_test = sd(mean_R.Sqr_test) / sqrt(length(mean_R.Sqr_test))) %>%
+    pivot_longer(cols = dev.exp:SE_R.Sqr_test, names_to = 'summary_stat', values_to = 'values') %>%
+    mutate_at(vars(id, summary_stat), list(as.factor)) %>%
+    group_by(summary_stat) %>%
+    summarise(mean_stat = mean(values)) %>%
+    mutate(resolution = res[i]) %>%
+    mutate_at(vars(resolution), list(as.factor))
+
+  # add to overall summary ----
+  overall.summary <- data.frame()
+  overall.summary <- rbind(overall.summary, summary.df2)
+}
+  
+```
+

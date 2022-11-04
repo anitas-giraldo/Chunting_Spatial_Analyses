@@ -61,6 +61,8 @@ library(purrr)
 library(modelr)
 library(broom)
 library(tidyr)
+library(latex2exp)
+library(lemon)
 ```
 
 ```{r}
@@ -90,7 +92,91 @@ p <- ggplot(overall.summary %>%
 p
 ```
 
+```{r, fig.width=7, fig.height=10}
+new.label <- c('mean_R.Sqr_test' = 'Testing R-squared',
+               'dev.exp' = 'Deviance Explained', 
+               'rmse' = 'RMSE')
+
+overall.summary$summary_stat <- factor(overall.summary$summary_stat, 
+                                       levels = c('dev.exp', 'mean_R.Sqr_test', 'rmse'))
+
+overall.summary %>% 
+  dplyr::filter(summary_stat %in% c('dev.exp', 'mean_R.Sqr_test', 'rmse')) %>%
+  dplyr::select(-resolution) %>% 
+  mutate(resolution = factor(rep(c('120x120', '300x300', '900x900', '1500x1500'), each = 3),
+                             levels = c('120x120', '300x300', '900x900', '1500x1500'))) %>%
+  ggplot(aes(x = resolution, y = mean_stat, color = resolution)) +
+  geom_point(size = 4) + 
+  geom_errorbar(aes(ymin = mean_stat - se_stat, ymax = mean_stat + se_stat),
+                width = 0.15, position = position_dodge(0.9), alpha = 4, size = 1) +
+  facet_wrap(~ summary_stat, 
+             nrow = 3, scales = 'free_y',
+             labeller = labeller(summary_stat = new.label)) + 
+  theme_bw() + 
+  labs(y = '', x = 'Resolution') + 
+  theme(axis.text.x = element_text(angle = 45, h = 1),
+        legend.position = 'bottom',
+        legend.key.size = unit(1, 'line'), 
+        axis.title.x = element_text(face = 'bold'),
+        axis.title.y = element_text(face = 'bold'),
+        legend.text = element_text(face = 'bold'),
+        panel.grid.major = element_blank(),
+        strip.text = element_text(face = 'bold'),
+        strip.background = element_rect(colour = 'black', fill = 'white'),
+        text = element_text(size = 30))
+```
+
 ```{r}
+overall.summary %>% 
+  dplyr::filter(summary_stat == 'dev.exp' & summary_stat == 'rmse')
+```
+
+```{r, fig.width=7, fig.height=5}
+r.sq <- overall.summary %>% 
+  dplyr::filter(summary_stat == 'mean_R.Sqr_test') %>%
+  dplyr::select(-resolution) %>%
+  mutate(resolution = factor(c('120x120', '300x300', '900x900', '1500x1500'),
+                             levels = c('120x120', '300x300', '900x900', '1500x1500'))) %>%
+  ggplot(aes(x = resolution, y = mean_stat, fill = resolution)) + 
+  geom_bar(position = 'dodge', stat = 'identity', color = 'black') + 
+  geom_errorbar(aes(ymin = mean_stat - se_stat, ymax = mean_stat + se_stat),
+                width = 0.15, position = position_dodge(0.9), alpha = 2) +
+  labs(x = 'Resolution', y = TeX('$\\R^2_{test}$'), fill = "") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, h = 1),
+        legend.position = 'bottom',
+        legend.key.size = unit(1, 'line'), 
+        axis.title.x = element_text(face = 'bold'),
+        axis.title.y = element_text(face = 'bold'),
+        legend.text = element_text(face = 'bold'),
+        panel.grid.major = element_blank(),
+        text = element_text(size = 30))
+
+r.sq
+```
+
+```{r, fig.width=7, fig.height=5}
+rmse <- overall.summary %>% 
+  dplyr::filter(summary_stat == 'rmse') %>%
+  dplyr::select(-resolution) %>%
+  mutate(resolution = factor(c('120x120', '300x300', '900x900', '1500x1500'),
+                             levels = c('120x120', '300x300', '900x900', '1500x1500'))) %>%
+  ggplot(aes(x = resolution, y = mean_stat, fill = resolution)) + 
+  geom_bar(position = 'dodge', stat = 'identity', color = 'black') + 
+  geom_errorbar(aes(ymin = mean_stat - se_stat, ymax = mean_stat + se_stat),
+                width = 0.15, position = position_dodge(0.9), alpha = 2) +
+  labs(x = 'Resolution', y = TeX('RMSE'), fill = "") + 
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 45, h = 1),
+        legend.position = 'bottom',
+        legend.key.size = unit(1, 'line'), 
+        axis.title.x = element_text(face = 'bold'),
+        axis.title.y = element_text(face = 'bold'),
+        legend.text = element_text(face = 'bold'),
+        panel.grid.major = element_blank(),
+        text = element_text(size = 30))
+
+rmse
 ```
 
 

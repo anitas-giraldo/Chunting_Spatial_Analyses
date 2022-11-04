@@ -120,32 +120,36 @@ obs.density <- obs.data %>%
 # put all data frames into list
 df.list <- list(kelp.density, kelp.area, obs.density)
 # merge all data frames together
-df <- df.list %>% reduce(full_join, by = 'year')
+df <- df.list %>% 
+  reduce(full_join, by = 'year') 
 
 new.label <- c('120' = '120x120', '300' = '300x300', 
                '900' = '900x900', '1500' = '1500x1500')
 
-ggplot(df, aes(x = year, y = fit)) + 
-  geom_bar(stat = 'identity', color = 'black', alpha = 0.5, 
-           position = position_dodge(), fill = 'skyblue') +
+ggplot(data.frame(df), aes(x = year)) + 
+  geom_bar(aes(y = fit, fill = 'fit'), stat = 'identity', color = 'black', 
+           alpha = 0.3, position = position_dodge()) +
+  scale_fill_manual('', labels = c('Predicted'), values = 'darkseagreen3') + 
   geom_errorbar(aes(ymin = fit - se.fit, ymax = fit + se.fit), 
                 width = 0.5, position = position_dodge(0.9)) +
   geom_pointrange(aes(x = year, y = mean.obs, 
-                      ymin = mean.obs - se.obs, ymax = mean.obs + se.obs),
-                  alpha = 1, size = 0.5, color = 'red') + 
-  geom_line(aes(x = year, y = mean.obs, group = 1), size = 0.5, color = 'red') +
+                      ymin = mean.obs - se.obs, ymax = mean.obs + se.obs, color = 'mean.obs'),
+                  alpha = 1, size = 0.5) + 
+  geom_line(aes(y = mean.obs, group = 1, colour = 'mean.obs'), size = 0.5) +
+  scale_colour_manual(' ', labels = c('Observed'), values = c('mean.obs' = 'forestgreen')) +
   facet_wrap(. ~ resolution, nrow = 2, ncol = 2,
              labeller = labeller(resolution = new.label)) + 
   labs(x = 'Year', y = 'Kelp Density') + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 60, vjust = 0.5, face = 'bold'),
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
         axis.title.x = element_text(face = 'bold'),
-        axis.text.y = element_text(face = 'bold'),
         axis.title.y = element_text(face = 'bold'),
         strip.text = element_text(face = 'bold'),
         strip.background = element_rect(colour = 'black', fill = 'white'),
         panel.grid.major.x = element_blank(),
-        text = element_text(size = 20)) 
+        text = element_text(size = 20),
+        legend.key.size = unit(1, 'line'),
+        legend.position = 'bottom')
 ```
 
 ```{r, fig.width=6, fig.height=4}
@@ -160,27 +164,27 @@ factor <- 12
 new.label <- c('120' = '120x120', '300' = '300x300', 
                '900' = '900x900', '1500' = '1500x1500')
 
-ggplot(df, aes(x = year, y = fit*factor)) + 
+ggplot(data.frame(df), aes(x = year, y = fit*factor)) + 
   geom_bar(stat = 'identity', color = 'black', alpha = 0.5, 
-           position = position_dodge(), fill = 'skyblue') +
+           position = position_dodge(), fill = 'seagreen') +
   geom_errorbar(aes(ymin = (fit - se.fit)*factor, ymax = (fit + se.fit)*factor), 
                 width = 0.5, position = position_dodge(0.9)) +
   geom_pointrange(aes(x = year, y = mean.area, 
                       ymin = mean.area - se.area, ymax = mean.area + se.area),
                   alpha = 1, size = 0.5, color = 'red') + 
   geom_line(aes(x = year, y = mean.area, group = 1), color = 'red') +
-  scale_y_continuous(name = 'Kelp Area', 
-                     sec.axis = sec_axis(~. / factor, name = 'Kelp Density')) + 
+  scale_y_continuous(name = 'Kelp Area (from Landsat)', 
+                     sec.axis = sec_axis(~. / factor, name = 'Predicted Kelp Density')) + 
   facet_wrap(. ~ resolution, nrow = 2, ncol = 2,
              labeller = labeller(resolution = new.label)) + 
   labs(x = 'Year') + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 60, vjust = 0.5, face = 'bold'),
+  theme(axis.text.x = element_text(angle = 60, vjust = 0.5),
         axis.title.x = element_text(face = 'bold'),
-        axis.text.y.left = element_text(color = 'red', face = 'bold'),
+        axis.text.y.left = element_text(color = 'red'),
         axis.title.y.left = element_text(color = 'red', face = 'bold'),
-        axis.text.y.right = element_text(color = 'skyblue', face = 'bold'),
-        axis.title.y.right = element_text(color = 'skyblue', face = 'bold', vjust = 2),
+        axis.text.y.right = element_text(color = 'seagreen'),
+        axis.title.y.right = element_text(color = 'seagreen', face = 'bold', vjust = 2),
         strip.text = element_text(face = 'bold'),
         strip.background = element_rect(colour = 'black', fill = 'white'),
         panel.grid.major.x = element_blank(),
@@ -316,15 +320,15 @@ plot <- function(site) {
       x = year, y = mean, group = zone, color = zone, 
       ymin = mean - se, ymax = mean + se
       ), alpha = 1, size = 0.5) + 
-    geom_bar(aes(x = year, y = fit, 
-                 fill = ifelse(!is.na(fit) & fit >= 6.6, 'YES', 'NO')), 
-             stat = 'identity', position = 'dodge', alpha = 0.2) +
+    geom_bar(aes(x = year, y = fit, fill = 'fit'), 
+             stat = 'identity', position = 'dodge', alpha = 0.2, color = 'black') +
+    scale_fill_manual('', labels = c('Predicted'), values = 'darkseagreen3') +
     facet_wrap(. ~ resolution, nrow = 2, ncol = 2, 
                labeller = labeller(resolution = new.label)) + 
     labs(x = 'Year', y = 'Kelp Density', colour = 'Zone',
          title = paste0('Predicted and Observed Kelp Density \n for ', site), 
          fill = 'Overpredicted') +
-    scale_colour_manual(values = c('blue', 'red')) + 
+    scale_colour_manual('Observed by Zone', values = c('blue', 'purple')) + 
     theme_bw() + 
     theme(axis.text.x = element_text(angle = 60, vjust = 0.5, size = 20), 
           axis.title.x = element_text(face = 'bold'),
@@ -339,7 +343,6 @@ plot <- function(site) {
 }
 
 plot('Van Damme')
-plot('Point Arena MPA (M2)')
 ```
 
 ## Figure 3
@@ -399,14 +402,14 @@ plot.area <- function(site) {
   plot <- ggplot() + 
     geom_bar(data = filter(kelp.density, site_name == site),
              aes(x = year, y = fit * factor), stat = 'identity', 
-             position = 'dodge', color = 'black', fill = 'skyblue') +
+             position = 'dodge', color = 'black', fill = 'forestgreen', alpha = 0.5) +
     labs(x = 'Year', 
          title = paste0('Predicted Kelp Density and Kelp Area \n for ', site)) + 
     geom_point(data = filter(kelp.area, site_name == site),
                aes(x = year, y = area), size = 1, color = 'red') + 
     geom_line(data = filter(kelp.area, site_name == site),
               aes(x = year, y = area), color = 'red', size = 1, group = 1, na.rm = TRUE) + 
-    scale_y_continuous(name = 'Kelp Area',
+    scale_y_continuous(name = 'Kelp Area (from Landsat)',
                        sec.axis = sec_axis(~. / factor, name = 'Predicted Kelp Density')) +
     facet_wrap(. ~ resolution, nrow = 2, ncol = 2,
                labeller = labeller(resolution = new.label)) + 
@@ -415,8 +418,8 @@ plot.area <- function(site) {
           axis.title.x = element_text(face = 'bold'),
           axis.text.y.left = element_text(color = 'red'),
           axis.title.y.left = element_text(color = 'red', face = 'bold'),
-          axis.text.y.right = element_text(color = 'skyblue'),
-          axis.title.y.right = element_text(color = 'skyblue', face = 'bold', vjust = 1),
+          axis.text.y.right = element_text(color = 'forestgreen'),
+          axis.title.y.right = element_text(color = 'forestgreen', face = 'bold', vjust = 1),
           legend.title = element_text(face = 'bold'),
           strip.text = element_text(face = 'bold'),
           strip.background = element_rect(colour = 'black', fill = 'lightgrey'),
@@ -427,5 +430,4 @@ plot.area <- function(site) {
 }
 
 plot.area('Van Damme')
-plot.area('Point Arena MPA (M2)')
 ```

@@ -93,7 +93,7 @@ p
 ```
 
 ```{r, fig.width=7, fig.height=10}
-new.label <- c('mean_R.Sqr_test' = 'Testing R-squared',
+new.label <- c('mean_R.Sqr_test' = 'R-squared',
                'dev.exp' = 'Deviance Explained', 
                'rmse' = 'RMSE')
 
@@ -112,9 +112,10 @@ overall.summary %>%
   facet_wrap(~ summary_stat, 
              nrow = 3, scales = 'free_y',
              labeller = labeller(summary_stat = new.label)) + 
+  guides(color = FALSE) + 
   theme_bw() + 
   labs(y = '', x = 'Resolution') + 
-  theme(axis.text.x = element_text(angle = 45, h = 1),
+  theme(axis.text.x = element_text(angle = 30, v = 0.5, face = 'bold'),
         legend.position = 'bottom',
         legend.key.size = unit(1, 'line'), 
         axis.title.x = element_text(face = 'bold'),
@@ -178,6 +179,14 @@ rmse <- overall.summary %>%
 
 rmse
 ```
+
+```{r}
+data.frame(predictor = c('Urchin Density', 'Max Nitrate', 'Wave Height', 'Orbital Velocity'),
+           resolution = c('300x300 m', '5000x5000 m', '1000x100 m' , '30x30 m')) %>%
+  pander()
+```
+
+
 
 
 
